@@ -173,7 +173,7 @@ def transformQ(Pkin,setkin,setkout,dataQ,n=2**12,kr=1,extrap=True,setkextrap = 1
         P2k = Pkin[nkin:2*nkin]
         P4k = Pkin[2*nkin:3*nkin]
     
-    print(setkin)
+    
     P0int = scipy.interpolate.interp1d(setkin[:nkin],P0k,kind=3,bounds_error = False, fill_value = 'extrapolate')
     P2int = scipy.interpolate.interp1d(setkin[:nkin],P2k,kind=3,bounds_error = False, fill_value = 'extrapolate')
     P4int = scipy.interpolate.interp1d(setkin[:nkin],P4k,kind=3,bounds_error = False, fill_value = 'extrapolate')

@@ -268,70 +268,71 @@ def lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,fiducial, inter
         return -100000
     else :
         lnAs,Om,h,b1,b2,b3,b4,b5,b6,b7,b8,b9,b10,b11 = match_para(theta, free_para, fix_para)
-    
+        
     # Import the power spectra interpolators on the grid
-    if withBisp:
-        Plininterp,Ploopinterp,Bispinterp = interpolation_grid
-    else:
-        Plininterp,Ploopinterp = interpolation_grid 
-        Bispinterp = None
+        if withBisp:
+            Plininterp,Ploopinterp,Bispinterp = interpolation_grid
+        else:
+            Plininterp,Ploopinterp = interpolation_grid 
+            Bispinterp = None
         
-    kfull = Ploopinterp((lnAs,Om,h))[:,0]
+        kfull = Ploopinterp((lnAs,Om,h))[:,0]
     
-    if check_if_multipoles_k_array(kfull):
-        kfull = kfull[:len(kfull)/3] 
+        if check_if_multipoles_k_array(kfull):
+            kfull = kfull[:len(kfull)/3] 
         
-    Ploop = np.swapaxes(Ploopinterp((lnAs,Om,h)).reshape(3,len(kfull),22),axis1 = 1,axis2 = 2)[:,1:,:]
-    Plin = np.swapaxes(Plininterp((lnAs,Om,h)).reshape(3,len(kfull),4),axis1 = 1,axis2 = 2)[:,1:,:]       
+        Ploop = np.swapaxes(Ploopinterp((lnAs,Om,h)).reshape(3,len(kfull),22),axis1 = 1,axis2 = 2)[:,1:,:]
+        Plin = np.swapaxes(Plininterp((lnAs,Om,h)).reshape(3,len(kfull),4),axis1 = 1,axis2 = 2)[:,1:,:]       
       
      
-    # Compute the PS       
-    valueb = np.array([b1,b2,b3,b4,b5,b6,b7,b8,b9,b10])        
-    Pmodel = computePS(valueb,Plin,Ploop,kfull,kfull)
+        # Compute the PS       
+        valueb = np.array([b1,b2,b3,b4,b5,b6,b7,b8,b9,b10])        
+        Pmodel = computePS(valueb,Plin,Ploop,kfull,kfull)
     
-    #The AP parameters
-    qperp,qpar = get_AP_param(Om,h,fiducial)
+        #The AP parameters
+        qperp,qpar = get_AP_param(Om,h,fiducial)
     
-    if not binning:
-        Pmodel = APpowerspectraNkmu.changetoAPnobinning(Pmodel,kfull,xdata,qperp,qpar)
-    else:
-        if type(TableNkmu) == type(None):
-            raise Exception('You want to account for binning but forgot to provide a TableNkmu (array of shape (3,n)) obtained from the sims/ Can be found in input/TableNkmu')
-        else : Pmodel = APpowerspectraNkmu.changetoAPbinning(Pmodel,kfull,xdata,qperp,qpar,TableNkmu)
+        if not binning:
+            Pmodel = APpowerspectraNkmu.changetoAPnobinning(Pmodel,kfull,xdata,qperp,qpar)
+        else:
+            if type(TableNkmu) == type(None):
+                raise Exception('You want to account for binning but forgot to provide a TableNkmu (array of shape (3,n)) obtained from the sims/ Can be found in input/TableNkmu')
+            else : Pmodel = APpowerspectraNkmu.changetoAPbinning(Pmodel,kfull,xdata,qperp,qpar,TableNkmu)
     
     
-    if window:
-        if type(dataQ) ==  type(None):
-            raise Exception('You want to account for window function but forgot to provide a dataQ (array of shape (8,n)) obtained from the sims. Can be found in input/dataQ')
-        else: Pmodel = WindowFFTlog.transformQ(np.concatenate(Pmodel),xdata,xdata,dataQ,extrap = False)
+        if window:
+            if type(dataQ) ==  type(None):
+                raise Exception('You want to account for window function but forgot to provide a dataQ (array of shape (8,n)) obtained from the sims. Can be found in input/dataQ')
+            else: Pmodel = WindowFFTlog.transformQ(np.concatenate(Pmodel),xdata,xdata,dataQ,extrap = False)
     
         
-    modelX = np.concatenate(Pmodel)
-                
-    if withBisp:
-        if type(masktriangle) ==  type(None) or type(Bispdata) == type(None) or type(Bispinterp) ==  type(None):
-            raise Exception('You want to use the bispectrum but forgot to provide a mask for the triangle or the data or the interpolation of the Bisp. Can be found in input/')
-        if Cinv.shape[0] != xdata.shape + sum(masktriangle):
-            raise Exception('You want to use the bispectrum but forgot to use the full covariance for power spectrum + Bisp. Can be found in input/Covariance')
+        modelX = np.concatenate(Pmodel)
+                    
+        if withBisp:
+            if type(masktriangle) ==  type(None) or type(Bispdata) == type(None) or type(Bispinterp) ==  type(None):
+                raise Exception('You want to use the bispectrum but forgot to provide a mask for the triangle or the data or the interpolation of the Bisp. Can be found in input/')
+            if Cinv.shape[0] != xdata.shape + sum(masktriangle):
+                raise Exception('You want to use the bispectrum but forgot to use the full covariance for power spectrum + Bisp. Can be found in input/Covariance')
         
-        TermsBisp=Bispinterp((lnAs,Om,h))
-        bval = np.array([1.,b1,b2,b4,b1*b11,b1**2,b1*b2,b1*b4,b1**3,b1**2*b2,b1**2*b4,b8**2])
-        Bisp = 1./(4*np.pi)*np.dot(bval,TermsBisp[3:])
+            TermsBisp = Bispinterp((lnAs,Om,h))
+            bval = np.array([1.,b1,b2,b4,b1*b11,b1**2,b1*b2,b1*b4,b1**3,b1**2*b2,b1**2*b4,b8**2])
+            Bisp = 1./(4*np.pi)*np.dot(bval,TermsBisp[3:])
         
-        modelX = np.concatenate([modelX,Bisp[masktriangle]])
-        ydata = np.concatenate([ydata,Bispdata[masktriangle]])
+            modelX = np.concatenate([modelX,Bisp[masktriangle]])
+            ydata = np.concatenate([ydata,Bispdata[masktriangle]])
         
     
     
-    diff  =  (modelX - ydata)
-    step1 = np.dot(Cinv,diff)
+        diff  =  (modelX - ydata)
+        step1 = np.dot(Cinv,diff)
         
         
-    chi2 = np.dot(diff,step1)
-    return -0.5*chi2
+        chi2 = np.dot(diff,step1)
+        
+        return -0.5*chi2
 
 
-def lnprob(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,fiducial, Grid,binning=False,TableNkmu=None, window=True,dataQ=None):
+def lnprob(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,fiducial, Grid,binning=False,TableNkmu=None, window=True,dataQ=None,withBisp=False,masktriangle=None,Bispdata=None):
    
     """ Computes the log of the probability (logprior + loglike)
 
@@ -360,7 +361,7 @@ def lnprob(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,fiducial, Grid,
     if np.isfinite(lp) == False :
         dummy  =  -np.inf
         
-    dummy  =  lp + lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,fiducial, Grid,binning=False,TableNkmu=None, window=True,dataQ=None)
+    dummy  =  lp + lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,fiducial, Grid,binning=binning,TableNkmu=TableNkmu, window=window,dataQ=dataQ,withBisp=withBisp,masktriangle=masktriangle,Bispdata=Bispdata)
 
     return dummy
 
@@ -399,7 +400,7 @@ if __name__ ==  "__main__":
     #For lightcone simulations, need to specify north or south for now (later, merge the two but I'm missing the covariance for SGC
     ZONE = 'NGC'
     
-    boxnumber = 1 #
+    boxnumber = 1 
     KMAX = 0.2
 
     if ZONE != '':    
@@ -414,6 +415,9 @@ if __name__ ==  "__main__":
     window = True
     binning = False
     masktriangle = None
+    TableNkmu = None
+    Bispdata = None
+    
 
 ##############################
 ###  Priors ###################
@@ -471,7 +475,7 @@ if __name__ ==  "__main__":
     
             all_true  =  np.concatenate(([lnAs_fid, Om_fid, h_fid],inipos))
             all_name  =  np.concatenate(([r'$A_s$',r'$\Omega_m$',r'$h$'],[r'$b_%s$'%i for i in range(len(inipos))]))
-            free_para  =  True, True, True,True, True, True,True, True, True,True, True, True,True,False
+            free_para  =  [True,True,True,True,True,True,True,True,True,True,True,True,True,False]
             
             nparam = len(free_para)
             
@@ -503,16 +507,21 @@ if __name__ ==  "__main__":
     #################################
 
         
-        chi2  =  lambda theta: -2 * lnlike(theta,xdata, ydata, Cinv, free_para, fix_para,bounds,fiducial, interpolation_grid,binning=binning,window=window,withBisp=withBisp,dataQ=dataQ)
+        chi2  =  lambda theta: -2 * lnlike(theta,xdata, ydata, Cinv, free_para, fix_para,bounds,fiducial, interpolation_grid,binning=binning,window=window,withBisp=withBisp,dataQ=dataQ,TableNkmu=TableNkmu,Bispdata=Bispdata)
     
 
         result  =  op.minimize(chi2, all_true,method = 'SLSQP',bounds = bounds,options = {'maxiter':100})
 
-        free_ml  =  result["x"]
+        all_ml  =  result["x"]
+        
+        free_ml = all_ml[free_para]
 
         minchi2  =  result["fun"]
         
-        dof = len(xdata) + sum(masktriangle) - ndim
+        if masktriangle == None:
+            dof = len(xdata) - ndim
+        else:
+            dof = len(xdata) + sum(masktriangle) - ndim
     
         np.savetxt(opa.join(OUTPATH,"minchi2%sbox_%skmax_%s.txt")%(runtype,boxnumber,kmax),np.concatenate([free_ml,[minchi2,dof]]))
     
@@ -524,14 +533,14 @@ if __name__ ==  "__main__":
  
 
     Nchains  =  4
-    nwalkers  =  2*26
+    nwalkers  =  2*nparam
     fidpos = np.concatenate([ [ lnAs_fid,   Om_fid,   h_fid],  free_ml[3:]])
 
 
     # Start MCMC
     t0 = time.time()
     temperature  =  1.
-    minlength  =  4000
+    minlength  =  100
     ichaincheck  =  50
     ithin  =  1
     epsilon  =  0.06
@@ -549,12 +558,12 @@ if __name__ ==  "__main__":
         for ii in xrange(nwalkers):
             accepted  =  False
             while (not accepted):
-                trialfiducial  =  np.random.normal(loc = free_ml,scale =  temperature*onesigma)
+                trialfiducial  =  np.random.normal(loc = free_ml,scale =  temperature*onesigma[free_para])
                 accepted  =  np.isfinite(lnprior(trialfiducial, free_para, fix_para,bounds))
             if accepted:
                 initialpos.append(trialfiducial)
         pos.append(initialpos)
-        sampler.append(emcee.EnsembleSampler(nwalkers, ndim, lnprob,a = 1.15, args = (xdata, ydata, Cinv, free_para, fix_para,fiducial, interpolation_grid),kwargs={'binning':binning,'window':window,'withBisp':withBisp},threads = 16))
+        sampler.append(emcee.EnsembleSampler(nwalkers, ndim, lnprob,a = 1.15, args = (xdata, ydata, Cinv, free_para, fix_para,bounds,fiducial, interpolation_grid),kwargs={'binning':binning,'window':window,'withBisp':withBisp,'dataQ':dataQ,'masktriangle':masktriangle,'TableNkmu':TableNkmu,'Bispdata':Bispdata},threads = 1))
         
     np.save(opa.join(OUTPATH,"inipos%sbox_%skmax_%s")%(runtype,boxnumber,kmax),np.array(pos))
     # Start MCMC
@@ -589,6 +598,7 @@ if __name__ ==  "__main__":
             withinchainvar[jj]  =  np.var(chainsamples, axis = 0)
             meanchain[jj]  =  np.mean(chainsamples, axis = 0)
             samplesJG.append(chainsamples)
+            np.save(opa.join(OUTPATH,"ChainsMidway/samplerchainmid%sbox_%skmax_%srun_%s")%(runtype,boxnumber,kmax,jj),sampler[jj].chain[:20,::10,:])
         scalereduction  =  gelman_rubin_convergence(withinchainvar, meanchain, itercounter/2, Nchains, ndim)
         print("scalereduction  =  ", scalereduction)
         
@@ -618,7 +628,7 @@ if __name__ ==  "__main__":
     burnin  =  1000
     
     for jj in range(Nchains):
-        np.save(opa.join(OUTPATH,"samplerchain%sbox_%skmax_%srun_%s")%(runtype,boxnumber,kmax,jj),sampler[jj].chain[:20,::10,:])
+        np.save(opa.join(OUTPATH,"samplerchain%sbox_%skmax_%srun_%s")%(runtype,boxnumber,kmax,jj),sampler[jj].chain[:,::5,:])
 
 
     ###################################
