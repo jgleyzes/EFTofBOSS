@@ -540,7 +540,7 @@ if __name__ ==  "__main__":
     # Start MCMC
     t0 = time.time()
     temperature  =  1.
-    minlength  =  100
+    minlength  =  4000
     ichaincheck  =  50
     ithin  =  1
     epsilon  =  0.06
