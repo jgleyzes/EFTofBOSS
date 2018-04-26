@@ -32,7 +32,7 @@ import APpowerspectraNkmu
 import WindowFFTlog
 
 # Data paths
-INPATH=opa.abspath(opa.join(THIS_PATH,'input')) 
+INPATH = opa.abspath(opa.join(THIS_PATH,'input')) 
 OUTPATH = opa.abspath(opa.join(THIS_PATH,'output')) 
 
 
