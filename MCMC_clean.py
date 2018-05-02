@@ -71,6 +71,7 @@ def get_grid(gridname,nbinsAs=100,nbins = 50,withBisp=False):
         gridname : The name of grid associated to the sim
         nbinsAs : number of bins for As (default is 100)
         nbinsAs : number of bins for Om and h (default is 50)
+        withBisp : whether or not to load grid for bispectrum (only works for simtype = LightConeHector)
 
         Outputs
         ------
@@ -119,6 +120,7 @@ def computePS(cvals,datalin,dataloop,setkin,setkout,removesqsig=True):
         dataloop : the loop power spectra from the EFT, with shape (multipoles, b_i, k)
         setkin : the values of k from the input power spectra (must match datalin and dataloop)
         setkout : the values of k for the output power spectra
+        removesqsig: whether or not to remove the piece of P22 which is constant at low k
 
         Outputs
         ------
@@ -383,7 +385,7 @@ if __name__ ==  "__main__":
     # Table of cosmological parameters according to seems
 
     dfcosmo = pd.read_csv(opa.join(INPATH,'DataFrameCosmosims.csv'),index_col=0)
-    simtype = "LightConeHector"
+    simtype = "LightConeDida"
     
     
     
@@ -421,7 +423,7 @@ if __name__ ==  "__main__":
     
     runtype = simtype+ZONE
     
-    withBisp = True
+    withBisp = False
     
     if withBisp:
         runtype += 'withBispkmax%s'%kmaxbisp
