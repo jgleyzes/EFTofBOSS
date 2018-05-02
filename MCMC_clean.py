@@ -62,7 +62,7 @@ def check_if_multipoles_k_array(setk):
             
 
 
-def get_grid(gridname,nbinsAs=100,nbins = 50):
+def get_grid(gridname,nbinsAs=100,nbins = 50,withBisp=False):
     
     """ Computes the power spectra given the b_i and the EFT power spectra
 
@@ -98,12 +98,17 @@ def get_grid(gridname,nbinsAs=100,nbins = 50):
 
     Plininterp = scipy.interpolate.RegularGridInterpolator((lnAstab,Omtab,htab),TablePlin.reshape((nbinsAs,nbins,nbins,TablePlin.shape[-2],TablePlin.shape[-1])))
     Ploopinterp = scipy.interpolate.RegularGridInterpolator((lnAstab,Omtab,htab),TablePloop.reshape((nbinsAs,nbins,nbins,TablePloop.shape[-2],TablePloop.shape[-1])))
-
-    return lnAsmin,lnAsmax,Ommin,Ommax,hmin,hmax,[Plininterp,Ploopinterp]
+    interpolations = [Plininterp,Ploopinterp]
+    if withBisp:
+        TableBisp = np.load(opa.abspath(opa.join(INPATH,'GridsEFT/TableBisp%s.npy'%gridname)))
+        Bispinterp = scipy.interpolate.RegularGridInterpolator((lnAstab,Omtab,htab),TableBisp.reshape((nbinsAs,nbins,nbins,TableBisp.shape[-2],TableBisp.shape[-1])))
+        interpolations = [Plininterp,Ploopinterp,Bispinterp]
+        
+    return lnAsmin,lnAsmax,Ommin,Ommax,hmin,hmax,interpolations
     
     
     
-def computePS(cvals,datalin,dataloop,setkin,setkout):
+def computePS(cvals,datalin,dataloop,setkin,setkout,removesqsig=True):
     
     """ Computes the power spectra given the b_i and the EFT power spectra
 
@@ -132,9 +137,10 @@ def computePS(cvals,datalin,dataloop,setkin,setkout):
         setkin = setkin[:len(setkin)/3]
     if check_if_multipoles_k_array(setkout):
         setkout = setkin[:len(setkout)/3]
+    P11int =  interp1d(setkin, datalin[0,-1])
+    sigsq = 2*scipy.integrate.quad(lambda x: x**2/(2*np.pi)**2*(P11int(x))**2,setkin.min(),setkin.max())[0]      
         
-        
-    P0 = interp1d(setkin,np.dot(cvals,data0)+datalin0[0]+b1*datalin0[1]+b1*b1*datalin0[2])(setkout)
+    P0 = interp1d(setkin,np.dot(cvals,data0)+datalin0[0]+b1*datalin0[1]+b1*b1*datalin0[2] - 2*(-b1 + b2 + b4)**2*sigsq)(setkout)
     P2 = interp1d(setkin,np.dot(cvals,data2)+datalin2[0]+b1*datalin2[1]+b1*b1*datalin2[2])(setkout)
     P4 = interp1d(setkin,np.dot(cvals,data4)+datalin4[0]+b1*datalin4[1]+b1*b1*datalin4[2])(setkout)
     
@@ -377,7 +383,7 @@ if __name__ ==  "__main__":
     # Table of cosmological parameters according to seems
 
     dfcosmo = pd.read_csv(opa.join(INPATH,'DataFrameCosmosims.csv'),index_col=0)
-    simtype = "LightConeDida"
+    simtype = "LightConeHector"
     
     
     
@@ -386,7 +392,7 @@ if __name__ ==  "__main__":
     
     
     gridname = series_cosmo.loc['gridname']
-    lnAsmin,lnAsmax,Ommin,Ommax,hmin,hmax,interpolation_grid = get_grid(gridname)
+    
 
     # COSMOLOGICAL GLOBALS: fiducial model (should match input sim data!)
     Om_fid  =  series_cosmo.loc['Omega_m']
@@ -402,6 +408,9 @@ if __name__ ==  "__main__":
     
     boxnumber = 1 
     KMAX = 0.2
+    kmin = 0.01
+    kminbisp = kmin
+    kmaxbisp = 0.05
 
     if ZONE != '':    
         dataQ = np.loadtxt(opa.join(INPATH,'Window_functions/dataQ_%s.txt'%ZONE)).T 
@@ -409,14 +418,21 @@ if __name__ ==  "__main__":
     Full_Cov = np.loadtxt(opa.join(INPATH,'Covariance/Cov%s%s.dat'%(simtype,ZONE)))
     
     
+    
     runtype = simtype+ZONE
     
-    withBisp = False
+    withBisp = True
+    
+    if withBisp:
+        runtype += 'withBispkmax%s'%kmaxbisp
+        
+        
+    Q1,Q2,Q3,Bispdata = np.loadtxt(opa.join(INPATH,'DataSims/Bispred_LightConeHector_%s_%s.dat'%(ZONE,boxnumber))).T
     window = True
     binning = False
-    masktriangle = None
+    masktriangle = (Q1>=kminbisp)&(Q1<=kmaxbisp)&(Q1<=Q2+Q3)&(Q1>=abs(Q2-Q3))&(Q2>=kminbisp)&(Q2<=kmaxbisp)&(Q3>=kminbisp)&(Q3<=kmaxbisp)
     TableNkmu = None
-    Bispdata = None
+    lnAsmin,lnAsmax,Ommin,Ommax,hmin,hmax,interpolation_grid = get_grid(gridname,withBisp=withBisp)
     
 
 ##############################
@@ -441,7 +457,7 @@ if __name__ ==  "__main__":
     ##### Initial guess for the b_i #####
     inipos = np.array([2.0310343 ,  -2.62623719,  -0.39661384,   4.21514113,
          8.36786486, -29.68630616,   1.03528956, -32.39092667,
-        40.00717862,   4.61905778,   4.61905778])
+        40.00717862,   4.61905778,   100])
 
     ##### Guess for the \sigma, to help with the initial position of walkers #####
     onesigma = np.array([  2.48736140e-01,   4.40317511e-02,   2.65820186e-02,
@@ -450,7 +466,7 @@ if __name__ ==  "__main__":
           2.49030346e+01,   5.73415031e+01,   1.38582379e+02,
           1.40667700e+02,1.40667700e+02]) 
 
-    kmin = 0.01
+    
     kmaxtab = [KMAX]
 
     print("Starting process")
@@ -464,7 +480,11 @@ if __name__ ==  "__main__":
 
             xdata = kPS[(kPS<kmax)&(kPS>kmin)]
             ydata = PSdata[(kPS<kmax)&(kPS>kmin)]
-            indexkred =  np.argwhere((kPS<kmax)&(kPS>kmin))[:,0] 
+            indexkred =  np.argwhere((kPS<kmax)&(kPS>kmin))[:,0]
+            if withBisp:
+                indextriangle = np.argwhere(masktriangle)[:,0]+kPS.shape[0]
+                indexkred = np.concatenate([indexkred,indextriangle])
+             
             Covred = Full_Cov[indexkred[:,None],indexkred]
 
             Cinv = np.linalg.inv(Covred)
@@ -475,7 +495,7 @@ if __name__ ==  "__main__":
     
             all_true  =  np.concatenate(([lnAs_fid, Om_fid, h_fid],inipos))
             all_name  =  np.concatenate(([r'$A_s$',r'$\Omega_m$',r'$h$'],[r'$b_%s$'%i for i in range(len(inipos))]))
-            free_para  =  [True,True,True,True,True,True,True,True,True,True,True,True,True,False]
+            free_para  =  [True,True,True,True,True,True,True,True,True,True,True,True,True,withBisp]
             
             nparam = len(free_para)
             
@@ -507,7 +527,7 @@ if __name__ ==  "__main__":
     #################################
 
         
-        chi2  =  lambda theta: -2 * lnlike(theta,xdata, ydata, Cinv, free_para, fix_para,bounds,fiducial, interpolation_grid,binning=binning,window=window,withBisp=withBisp,dataQ=dataQ,TableNkmu=TableNkmu,Bispdata=Bispdata)
+        chi2  =  lambda theta: -2 * lnlike(theta,xdata, ydata, Cinv, free_para, fix_para,bounds,fiducial, interpolation_grid,binning=binning,window=window,withBisp=withBisp,dataQ=dataQ,TableNkmu=TableNkmu,Bispdata=Bispdata,masktriangle=masktriangle)
     
 
         result  =  op.minimize(chi2, all_true,method = 'SLSQP',bounds = bounds,options = {'maxiter':100})
@@ -518,7 +538,7 @@ if __name__ ==  "__main__":
 
         minchi2  =  result["fun"]
         
-        if masktriangle == None:
+        if type(masktriangle) == type(None):
             dof = len(xdata) - ndim
         else:
             dof = len(xdata) + sum(masktriangle) - ndim
