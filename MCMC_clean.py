@@ -142,7 +142,7 @@ def computePS(cvals,datalin,dataloop,setkin,setkout,removesqsig=True):
     P11int =  interp1d(setkin, datalin[0,-1])
     sigsq = 2*scipy.integrate.quad(lambda x: x**2/(2*np.pi)**2*(P11int(x))**2,setkin.min(),setkin.max())[0]      
         
-    P0 = interp1d(setkin,np.dot(cvals,data0)+datalin0[0]+b1*datalin0[1]+b1*b1*datalin0[2] - 2*(-b1 + b2 + b4)**2*sigsq)(setkout)
+    P0 = interp1d(setkin,np.dot(cvals,data0)+datalin0[0]+b1*datalin0[1]+b1*b1*datalin0[2] - 2*removesqsig*(-b1 + b2 + b4)**2*sigsq)(setkout)
     P2 = interp1d(setkin,np.dot(cvals,data2)+datalin2[0]+b1*datalin2[1]+b1*b1*datalin2[2])(setkout)
     P4 = interp1d(setkin,np.dot(cvals,data4)+datalin4[0]+b1*datalin4[1]+b1*b1*datalin4[2])(setkout)
     
