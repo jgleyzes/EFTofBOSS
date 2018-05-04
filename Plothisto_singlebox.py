@@ -283,10 +283,12 @@ def getHisto(kmax,runtype,boxnumber,nmeas,dictparam,params = [r'$\ln(10^{10}A_s)
 
 #### Choice for the data #####
 
-boxnumber = 5#'G' 
+boxnumber = 6#'G' 
 KMAX = 0.2
-runtype = 'PatchyDidaNGCsigsq'
+runtype = 'LightConeDidaNGC'
 simtype = 'LightConeDida'
+
+#runtype += 'withBispkmax0.07'
 
 if 'NGC' in runtype:
     ZONE = 'NGC'
@@ -380,7 +382,7 @@ smooth2D = 0.03
 
 gs = gridspec.GridSpec(len(configtab),len(params) )
 fig1 = plt.figure(figsize = (18,10))
-nametab = [ 'EFT at 1-loop']
+nametab = [ 'EFT at 1-loop with Bisp']
 for i in range(len(configtab))[::-1]:
   if i == len(configtab)-1:
     
