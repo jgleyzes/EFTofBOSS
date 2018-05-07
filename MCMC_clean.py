@@ -385,7 +385,7 @@ if __name__ ==  "__main__":
     # Table of cosmological parameters according to seems
 
     dfcosmo = pd.read_csv(opa.join(INPATH,'DataFrameCosmosims.csv'),index_col=0)
-    simtype = "LightConeDida"
+    simtype = "LightConeHector"
     
     
     
@@ -427,6 +427,7 @@ if __name__ ==  "__main__":
     
     if withBisp:
         runtype += 'withBispkmax%s'%kmaxbisp
+        Full_Cov = np.loadtxt(opa.join(INPATH,'Covariance/Cov%s%s_Bisp.dat'%(simtype,ZONE)))
         
         
     Q1,Q2,Q3,Bispdata = np.loadtxt(opa.join(INPATH,'DataSims/Bispred_LightConeHector_%s_%s.dat'%(ZONE,boxnumber))).T

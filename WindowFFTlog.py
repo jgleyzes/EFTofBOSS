@@ -341,7 +341,7 @@ def transformQ(Pkin,setkin,setkout,dataQ,n=2**12,kr=1,extrap=True,setkextrap = 1
     P2hatout = (sp.interp1d(k,P2hat,bounds_error = False, fill_value = 'extrapolate'))(setkout[:nkout])
     P4hatout = (sp.interp1d(k,P4hat,bounds_error = False, fill_value = 'extrapolate'))(setkout[:nkout])
     
-    print('Today')
+
     
     return np.array([P0hatout,P2hatout,P4hatout])
      
