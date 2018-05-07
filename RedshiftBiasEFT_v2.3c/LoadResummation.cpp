@@ -4,7 +4,7 @@ void LoadM (const string & PathToFolderRD, const unsigned int & order, const dou
 
 	ostringstream filename ;
 
-    filename << PathToFolderRD << "M" << order << "_" << k << "_" << l << "_" << lp << ".dat" ;
+    filename << PathToFolderRD << setprecision(3) << "/M" << order << "_" << k << "_" << l << "_" << lp << ".dat" ;
     
 	ifstream data(filename.str(), ios::in) ;
 

@@ -62,19 +62,19 @@ void ResumM (const string & PathToFolderRD, const ParamsP11 & params, const bool
 
     				if (ExportM == true) {
     					ostringstream filename ;
-    					filename << PathToFolderRD << setprecision(3) << "M" << order << "_" << k << "_" << l << "_" << lp << ".dat" ;
+    					filename << PathToFolderRD << setprecision(3) << "/M" << order << "_" << k << "_" << l << "_" << lp << ".dat" ;
     					ofstream write (filename.str(), ios::out | ios::trunc) ;
     					for (unsigned int n = 0 ; n < Nkp ; n++) write << setw(12) << kres[n] << " " << setw(12) << (*TableM)[1][order][i][j][m][n] << endl ;
     					write.close() ;
 
     					ostringstream filename3 ;
-    					filename3 << PathToFolderRD << setprecision(3) << "Q" << order << "_" << k << "_" << l << "_" << lp << ".dat" ;
+    					filename3 << PathToFolderRD << setprecision(3) << "/Q" << order << "_" << k << "_" << l << "_" << lp << ".dat" ;
     					ofstream write3 (filename3.str(), ios::out | ios::trunc) ;
     					for (unsigned int n = 0 ; n < Nkp ; n++) write3 << setw(12) << kplist[n] << " " << setw(12) << real(Mhat[n]) << endl ;
     					write3.close() ;
 
     					ostringstream filename2 ;
-    					filename2 << PathToFolderRD << setprecision(3) <<  "QInfinity" << order << "_" << k << "_" << l << "_" << lp << ".dat" ;
+    					filename2 << PathToFolderRD << setprecision(3) <<  "/QInfinity" << order << "_" << k << "_" << l << "_" << lp << ".dat" ;
     					ofstream write2 (filename2.str(), ios::out | ios::trunc) ;
     					write2 << QInfinity(order,k,l,lp,X1Infinity,params.f) << endl ;
     					write2.close() ;
@@ -101,7 +101,7 @@ double QInfinity (const unsigned & Morder, const double & k, const unsigned & l,
 double LoadQInfinity (const string & PathToFolderRD, const unsigned & Morder, const double & k, const unsigned & l, const unsigned & lp) {
 
 	ostringstream filename ;
-    filename << PathToFolderRD << "QInfinity" << setprecision(3) << Morder << "_" << k << "_" << l << "_" << lp << ".dat" ;
+    filename << PathToFolderRD << "/QInfinity" << setprecision(3) << Morder << "_" << k << "_" << l << "_" << lp << ".dat" ;
 	ifstream data(filename.str(), ios::in) ;
 
 	if (!data.is_open()) { 
