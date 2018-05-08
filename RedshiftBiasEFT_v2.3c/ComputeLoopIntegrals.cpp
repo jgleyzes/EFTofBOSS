@@ -43,12 +43,12 @@ int ComputeLoopIntegrals (const PrecisionIntegr & Eps, const string & PathToFold
 		redshift z_ref ; ParametersCosmology cosmo_ref ;
 		
 		//plenty of dummy thingy
-		double d1,d2,d3 ; string d4,d5,d5bis,d5ter, d5quater ; YesNo d6,d6bis,d7,d8,d9 ; PrecisionIntegr d10 ; double d11,d12,d13 ;
+		double d1,d2,d3 ; string d4,d5,d5bis,d5ter, d5quater ; YesNo d6,d6bis,d6ter,d7,d8,d9 ; PrecisionIntegr d10 ; double d11,d12,d13 ;
 
 		string cosmo_ref_config_str = PathToFolderCosmoRef + "/cosmo_ref.ini" ; 
 		char *cosmo_ref_config = new char[cosmo_ref_config_str.length() + 1] ; 
 		strcpy(cosmo_ref_config, cosmo_ref_config_str.c_str()) ;
-		LoadConfigFile (cosmo_ref_config, d1, d2, d3, z_ref, cosmo_ref, d4, d5,d5bis,d5ter, d5quater, d6, d6bis,d7, d8, d9, d10, d11, d12, d13) ;
+		LoadConfigFile (cosmo_ref_config, d1, d2, d3, z_ref, cosmo_ref, d4, d5,d5bis,d5ter, d5quater, d6, d6bis,d6ter,d7, d8, d9, d10, d11, d12, d13) ;
 		
 		// If it happens that the cosmology and redshift under evaluation are the same as the ones of cosmo_ref, we are done.
 		if ( cosmo_ref[0] == Target[0] && cosmo_ref[1] == Target[1] && cosmo_ref[2] == Target[2] && cosmo_ref[3] == Target[3] && cosmo_ref[4] == Target[4] && z_ref == z0) {

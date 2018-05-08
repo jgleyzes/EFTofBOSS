@@ -17,8 +17,9 @@ void ComputeCounterTerms (const ParamsP11 & params, const double & nbar, const d
 			(*Ps)[i][17][m] = m6[i] * 2./km2 *params.f *k2 *P11k ;		// b7
 			(*Ps)[i][18][m] = m0[i] * 1./nbar ;							// b8
 			(*Ps)[i][19][m] = m0[i] * 1./nbar/km2 *k2 ;					// b9
-			(*Ps)[i][20][m] = m2[i] * 1./nbar/km2 *params.f *k2 ; 		// b10
+			(*Ps)[i][20][m] = m2[i] * 1./nbar/km2 *params.f *k2 ; 		// b10	
 		}
 	}
 }
+
 

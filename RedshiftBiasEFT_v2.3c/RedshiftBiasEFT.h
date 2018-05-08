@@ -94,7 +94,7 @@ const MultipoleMoments * const MultipoleExpansion[NI] = { &m2, &m2, &m2, &m4, &m
 
 // ComputePowerSpectra.cpp
 const size_t N0 = 3 ; 	// 3 linear terms
-const size_t N1 = 21 ; // 12 1-Loop PowerSpectra + 9 CounterTerms
+const size_t N1 = 22 ; // 12 1-Loop PowerSpectra + 9 CounterTerms + 1 P22 UV
 typedef double PowerSpectraNoResum[Nl][N1][Nk] ;
 
 void ComputePowerSpectraLinearNoResum (const ParamsP11 & params, PowerSpectraNoResum * Ps) ;
@@ -105,6 +105,9 @@ void ComputePowerSpectra1LoopNoResum (const PrecisionIntegr & Eps, const string 
 int ComputeLoopIntegrals (const PrecisionIntegr & Eps, const string & PathToFolder,const string & PathToFolderRD,const string & PathToFolderCosmoRef, const ParametersCosmology & Target, const redshift & z0, const ParamsP11 & params, const bool & UseCosmoRef, PowerSpectraNoResum *) ;
 static int Integrand_LoopIntegrals_CUBA (const int *ndim, const double a[], const int *ncomp, double ff[], void *params) ;
 
+// ComputeP22UV.cpp
+void P22UV (const string & PathToFolder, const ParamsP11 & params) ;
+static int Integrand_P22UV_CUBA (const int *ndim, const double a[], const int *ncomp, double ff[], void *params) ;
 
 // ComputeCounterTerms.cpp
 void ComputeCounterTerms (const ParamsP11 & params, const double & Nbar, const double & kM, const double & kNL, PowerSpectraNoResum * Ps) ;
@@ -117,7 +120,7 @@ void LoadCosmoRef (const string & PathToFolderCosmoRef, PowerSpectraNoResum * Ps
 typedef bool YesNo ;
 void LoadConfigFile (char * ConfigFile, double & nbar, double & km, double & knl, redshift & z0, ParametersCosmology & cosmo, 
 	string & PathToFolder, string & PathToFolderRD,string & PathToFolderCosmoRef, string & PathToLinearPowerSpectrum, string & PathToTriangles, 
-	YesNo & ComputePowerSpectrum, YesNo & ComputeBispectrum, YesNo & UseRef, YesNo & ImportM, YesNo & ExportM, 
+	YesNo & ComputePowerSpectrum, YesNo & ComputeP22UV, YesNo & ComputeBispectrum, YesNo & UseRef, YesNo & ImportM, YesNo & ExportM, 
 	PrecisionIntegr & Eps, double & EpsRel_IntegrBispectrumAP, double & aperp, double & apar) ;
 
 

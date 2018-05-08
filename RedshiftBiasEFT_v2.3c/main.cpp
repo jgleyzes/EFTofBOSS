@@ -16,7 +16,7 @@ int main(int argc, char *argv[]) {
 		double nbar = 1./105. , km = 1. , knl = 1. ;
 		redshift z0 = 0.67 ;
 		ParametersCosmology cosmo ; for (unsigned int i = 0 ; i < Nc ; i++) cosmo[i] = Reference[i] ;
-		YesNo UseRef = 0, ImportM = 1, ExportM = 0, ComputePowerSpectrum = 1 , ComputeBispectrum = 1 ;
+		YesNo UseRef = 0, ImportM = 1, ExportM = 0, ComputePowerSpectrum = 1 , ComputeBispectrum = 1, ComputeP22UV = 1 ;
 		string PathToFolder = "./" ;
 		string PathToFolderRD ;
 		string PathToFolderCosmoRef ;
@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
 
 		LoadConfigFile (argv[1], nbar, km, knl, z0, cosmo, \
 			PathToFolder,PathToFolderRD,PathToFolderCosmoRef, PathToLinearPowerSpectrum, PathToTriangles, 
-			ComputePowerSpectrum, ComputeBispectrum, UseRef, ImportM, ExportM, 
+			ComputePowerSpectrum, ComputeP22UV, ComputeBispectrum, UseRef, ImportM, ExportM, 
 			Eps, EpsRel_IntegrBispectrumAP, aperp, apar) ;
 
 		///////////////////////////
@@ -48,6 +48,7 @@ int main(int argc, char *argv[]) {
 
 		int start_s=clock() ;
 
+		///////////// ONE-LOOP POWER SPECTRUM WITH RESUMMATION IN REDSHIFT SPACE (3 FIRST MULTIPOLES) ///////
 		if (ComputePowerSpectrum == true) {
 
 			if (ImportM == false) ResumM (PathToFolderRD, paramsP11, ExportM, &TableM) ;
@@ -61,8 +62,10 @@ int main(int argc, char *argv[]) {
 			ResumPowerSpectra (PathToFolder,PathToFolderRD, paramsP11, &PsLinear, &Ps1Loop, ImportM, ExportM, &TableM) ;
 		}
 
+		if (ComputeP22UV == true) P22UV(PathToFolder, paramsP11) ;
 
-		////// TREE-LEVEL BISPECTRUM WITH AP EFFECT ///////
+
+		///////////// TREE-LEVEL BISPECTRUM WITH AP EFFECT /////////////////////////////////////////////////
 		if (ComputeBispectrum == true) {
 			ComputeBispectrumMonopole (EpsRel_IntegrBispectrumAP, PathToFolder, PathToTriangles, paramsP11, nbar, aperp, apar) ;
 		}
