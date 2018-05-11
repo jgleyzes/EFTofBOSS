@@ -111,7 +111,7 @@ def fitBBKSk(k_junc,Pfunc,dx):
     return a,b,c
     
 
-def ExtrapolationPk(Pk,setk,setkextrap,k_junc_low = 0.02,k_junc_high=0.4,ktr=4,sig=0.5,withlog=False,damp = False):
+def ExtrapolationPk(Pk,setk,setkextrap,k_junc_low = 0.02,k_junc_high=0.4,ktr=4,sig=0.5,withlog=False,damp = False,extraphigh=False):
     
     """ Performs an extrapolation with power laws at low and high k, using matching value and slope at the junction.
 
@@ -127,7 +127,7 @@ def ExtrapolationPk(Pk,setk,setkextrap,k_junc_low = 0.02,k_junc_high=0.4,ktr=4,s
 
         Outputs
         ------
-        The extrapolated power spectrum
+        The extrapolated power spectrum. At high k we extrapolate by a constant times a damping function
     """
     
     kmin = setk.min()
@@ -142,30 +142,37 @@ def ExtrapolationPk(Pk,setk,setkextrap,k_junc_low = 0.02,k_junc_high=0.4,ktr=4,s
         Pkfunc = sp.interpolate.interp1d(setk,Pk,kind='cubic',bounds_error = False, fill_value = 'extrapolate')
         
         
-        
+        ntry = 0
         lowk = setkextrap[setkextrap < k_junc_low]
-        dx = 0.01*k_junc_low
+        dx = 0.1*k_junc_low
         a_low,b_low,c_low = fitBBKSk(k_junc_low,Pkfunc,dx)
         Plowk = np.array([TBBKS(k,a_low)**2 for k in lowk])*b_low*(lowk/k_junc_low)**c_low#
+
         
-        highk = setkextrap[setkextrap > k_junc_high]
+        
         
         if damp :
+            highk = setkextrap[setkextrap > k_junc_high]
             a_high,b_high,c_high = get_powerlaw_junc(k_junc_high,Pkfunc,damp=damp)
             Phighk = b_high*(highk/k_junc_high)**(c_high)*np.exp(-a_high*(highk-k_junc_high)/k_junc_high)
-            print(a_high,b_high,c_high)
         else :
-            a_high,b_high,c_high = fitBBKSk(k_junc_high,Pkfunc,dx)#b_high,c_high = get_powerlaw_junc(k_junc_high,Pkfunc,dx)
-            Phighk = np.array([TBBKS(k,a_high)**2 for k in highk])*b_high*(highk/k_junc_high)**c_high#
+            b_high,c_high = get_powerlaw_junc(k_junc_high,Pkfunc,damp=False)
+            while abs(c_high) > 10 and ntry < 30:
+                k_junc_high =  (0.2) * np.random.random(1) + k_junc_high - 0.1
+                b_high,c_high = get_powerlaw_junc(k_junc_high,Pkfunc,damp=False)
+                ntry += 1
+            highk = setkextrap[setkextrap > k_junc_high]    
+            Phighk = b_high*(highk/k_junc_high)**c_high
+        
             
         kforextrap = np.concatenate([lowk,setk[(setk>=k_junc_low)&(setk<=k_junc_high)], highk])
         
         Pforextrap = np.concatenate([Plowk,Pk[(setk>=k_junc_low)&(setk<=k_junc_high)],Phighk])
         
         if withlog:
-            dampfunction = np.array([damptanhlog(k,ktr,sig) for k in kforextrap])
+                dampfunction = np.array([damptanhlog(k,ktr,sig) for k in kforextrap])
         else:
-            dampfunction = np.array([damptanh(k,ktr,sig) for k in kforextrap])
+                dampfunction = np.array([damptanh(k,ktr,sig) for k in kforextrap])
         ExtraPk = sp.interpolate.interp1d(kforextrap,Pforextrap*dampfunction,kind='cubic',bounds_error = False, fill_value = 'extrapolate')(setkextrap)
     
         return ExtraPk 
@@ -278,9 +285,9 @@ def transformQ(Pkin,setkin,setkout,dataQ,n=2**12,kr=1,extrap=True,setkextrap = 1
         P4k = Pkin[2*nkin:3*nkin]
     
     
-    P0int = scipy.interpolate.interp1d(setkin[:nkin],P0k,kind=3,bounds_error = False, fill_value = 'extrapolate')
-    P2int = scipy.interpolate.interp1d(setkin[:nkin],P2k,kind=3,bounds_error = False, fill_value = 'extrapolate')
-    P4int = scipy.interpolate.interp1d(setkin[:nkin],P4k,kind=3,bounds_error = False, fill_value = 'extrapolate')
+    P0int = scipy.interpolate.interp1d(setkin[:nkin],P0k,kind=2,bounds_error = False, fill_value = 'extrapolate')
+    P2int = scipy.interpolate.interp1d(setkin[:nkin],P2k,kind=2,bounds_error = False, fill_value = 'extrapolate')
+    P4int = scipy.interpolate.interp1d(setkin[:nkin],P4k,kind=2,bounds_error = False, fill_value = 'extrapolate')
     
     logkmin = np.log(setkin.min())
     logkmax = np.log(setkin.max())
@@ -302,6 +309,7 @@ def transformQ(Pkin,setkin,setkout,dataQ,n=2**12,kr=1,extrap=True,setkextrap = 1
     dlnk=float(logkmax - logkmin)/(n-1)
 
     k = np.exp(np.linspace(logkmin,logkmax,n))
+    
 
     P0k=P0int(k)
     P2k=P2int(k)
@@ -371,7 +379,7 @@ if __name__ ==  "__main__":
     kPSPT,_,_,P2SPTw=np.loadtxt(opa.join(OUTPATH,"PSimBoxes/Quadrupole_SPTkernels_P0kmax_015_P0kmin_002_P2kmax_015_P2kmin_002_P4kmax_015_P4kmin_002_B0kmax_000_B0kmin_000.txt")).T
     kPSPT,_,_,P4SPTw=np.loadtxt(opa.join(OUTPATH,"PSimBoxes/Hexadecapole_SPTkernels_P0kmax_015_P0kmin_002_P2kmax_015_P2kmin_002_P4kmax_015_P4kmin_002_B0kmax_000_B0kmin_000.txt")).T
 
-    P0model,P2model,P4model = APpowerspectraNkmu.changetoAPnobinning(computePS(inipos,Plinfid,Ploopfid,kmodel3,kmodelfine3,withsq=0),kmodelfine3,kPSPT,0.9913259768142814, 0.9923775292365341)
+    P0model,P2model,P4model = APpowerspectraNkmu.changetoAPnobinning(computePS(inipos,Plinfid,Ploopfid,kmodel3,kmodelfine3,withsq=0),kmodelfine3,kmodelfine3,0.9913259768142814, 0.9923775292365341)
 
     PSTPw = np.array([P0SPTw,P2SPTw,P4SPTw])
     dataQ = np.loadtxt(opa.join(OUTPATH,'DataBispec/W_v4_NGC_mask_DR12cmass_50pc.txt')).T
@@ -379,12 +387,12 @@ if __name__ ==  "__main__":
     Pkin = np.concatenate([P0SPT,P2SPT,P4SPT])#np.concatenate([P0model,P2model,P4model])
     setkin = np.concatenate([kPSPT,kPSPT,kPSPT])#kmodelfine3
     setkout = np.concatenate([kPSPT,kPSPT,kPSPT])
-    kjunhigh = 0.9*setkin.max()
-    ktr = 2
-    sig = 0.5
+    kjunchigh = 0.95*setkin.max()
+    ktr = 3
+    sig = 1
     withlog = False
     dampl4 = False
-    PStransformed = np.concatenate(transformQ(Pkin,setkin,setkout,dataQ,n=64*10,extrap=True,k_junc_low=setkin.min(),k_junc_high=kjunhigh,ktr=ktr,sig=sig,withlog=withlog,damp=dampl4))
+    PStransformed = np.concatenate(transformQ(Pkin,setkin,setkout,dataQ,n=64*64,kr=0.5,extrap=True,setkextrap= 10**(np.linspace(-5,np.log10(2*kjunchigh),200)),k_junc_low=setkin.min(),k_junc_high=kjunchigh,ktr=ktr,sig=sig,withlog=withlog,damp=dampl4))
     
     nkout = len(setkout)/3
     nkin = len(setkin)/3
@@ -393,14 +401,14 @@ if __name__ ==  "__main__":
     plt.figure()
     for l in range(3):
          
-        plt.plot(setkin[l*nkin:(l+1)*nkin],setkin[l*nkin:(l+1)*nkin]*Pkin[l*nkin:(l+1)*nkin], color=dictcolor[str(l)],label='l = ' +str(l) + ' Original')
-        plt.plot(kPSPT,kPSPT*PSTPw[l], color=dictcolor[str(l)],label='l = ' +str(l) + ' Hector',ls='-.')
-        plt.plot(setkout[l*nkout:(l+1)*nkout],setkout[l*nkout:(l+1)*nkout]*PStransformed[l*nkout:(l+1)*nkout], color=dictcolor[str(l)], ls='--',label='l = ' + str(l)+ r' with $Q_\ell$')
+        plt.plot(setkin[l*nkin:(l+1)*nkin],Pkin[l*nkin:(l+1)*nkin], color=dictcolor[str(l)],label='l = ' +str(l) + ' Original')
+        plt.plot(kPSPT,PSTPw[l], color=dictcolor[str(l)],label='l = ' +str(l) + ' Hector',ls='-.')
+        plt.plot(setkout[l*nkout:(l+1)*nkout],PStransformed[l*nkout:(l+1)*nkout], color=dictcolor[str(l)], ls='--',label='l = ' + str(l)+ r' with $Q_\ell$')
     #plt.axvline((2*np.pi)/Lbox,color='k')
     plt.axvline(kmin,color='grey',ls='--')
     plt.axvline(kmax,color='grey',ls='--')
     plt.xlim(0.02,setkin.max())
-    plt.ylim(-200,2000)
+    #plt.ylim(-200,2000)
     #plt.text(1,1e5,'kr= ' + str(krtest))
     plt.show()
 

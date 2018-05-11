@@ -49,21 +49,21 @@ paramfid = {'z_pk' : Seriescosmo['z_pk'],
     'h' : Seriescosmo['h'],
     'output' : 'mPk'}    
             
-EPSAbs_NoCosmoRef = 0.01
-EPSRel_NoCosmoRef = 1e-5
-EPSAbs_YesCosmoRef = 0.3
-EPSRel_YesCosmoRef = 5e-2
+EPSAbs_NoCosmoRef = 10
+EPSRel_NoCosmoRef = 10
+EPSAbs_YesCosmoRef = 10
+EPSRel_YesCosmoRef = 10
 
 
               
-keys = ['outpath','zbEFT_path','CLASS_path','PathToFolderResumData','PathToFolderCosmoRef',
+keys = ['outpath','zbEFT_path','CLASS_path','PathToFolderRD','PathToFolderCosmoRef',
             'UseCosmoRef','ExportResummationMatrix','ImportResummationMatrix','ComputePowerSpectrum','ComputeBispectrum',
             'EpsAbs_NoCosmoRef', 'EpsRel_NoCosmoRef', 'EpsAbs_YesCosmoRef', 'EpsRel_YesCosmoRef',
             'ln10^{10}A_s','omega_cdm','omega_b','h','z_pk','n_s']
             
             
 valuesbs = [Outpath, zbeftpath, classpath, resumpath, cosmorefpath,
-                'no','no','no','yes','no',
+                'yes','no','yes','yes','no',
                 EPSAbs_NoCosmoRef, EPSRel_NoCosmoRef, EPSAbs_YesCosmoRef, EPSRel_YesCosmoRef,
                 Seriescosmo['lnAs'], paramfid['omega_cdm'], Seriescosmo['omega_b'],Seriescosmo['h'],Seriescosmo['z_pk'],Seriescosmo['ns']]
 
