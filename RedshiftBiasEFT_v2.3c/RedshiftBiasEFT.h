@@ -70,14 +70,9 @@ void UnloadP11 (const ParamsP11 & params) ;
 
 
 // Integrands.cpp
-typedef double Integrand (const double & k, const double & q, const double & x, const ParamsP11 & p) ;
-
-Integrand I1, I2, I3, I4, I5, I6, I7, I8, I9, I10, I11, I12, I13, I14, I15, I16, I17, I18, I19, I20, I21, I22, I23, I24, I25, I26, I27, I28, I29, I30, I31, I32, I33, I34, I35, I36, I37, I38, I39, I40, I41, I42, I43 ;
-// We found out that many are zero: only 22 among the original 43 are used.
-
-const size_t NI = 22 ; 
-Integrand * const Integrands[NI] = { I1, I2, I3, I4, I5, I6, I7, I8, I10, I12, I17, I20, I21, I22, I24, I25, I28, I32, I33, I41, I42, I43 } ;
-
+double Integrands (const int j, const double & k, const double & q, const double & x, const ParamsP11 & p) ;
+const size_t NI = 22 ; // Number of Integrals
+const double qUV = 1. ; // the UV term propto (k/q)^2 are subtracted up to this lower bound. 
 
 // Multipole expansion
 const size_t Nl = 5 ;
@@ -94,7 +89,7 @@ const MultipoleMoments * const MultipoleExpansion[NI] = { &m2, &m2, &m2, &m4, &m
 
 // ComputePowerSpectra.cpp
 const size_t N0 = 3 ; 	// 3 linear terms
-const size_t N1 = 22 ; // 12 1-Loop PowerSpectra + 9 CounterTerms + 1 P22 UV
+const size_t N1 = 21 ; // 12 1-Loop PowerSpectra + 9 CounterTerms
 typedef double PowerSpectraNoResum[Nl][N1][Nk] ;
 
 void ComputePowerSpectraLinearNoResum (const ParamsP11 & params, PowerSpectraNoResum * Ps) ;
@@ -104,10 +99,6 @@ void ComputePowerSpectra1LoopNoResum (const PrecisionIntegr & Eps, const string 
 // ComputeLoopIntegrals.cpp
 int ComputeLoopIntegrals (const PrecisionIntegr & Eps, const string & PathToFolder,const string & PathToFolderRD,const string & PathToFolderCosmoRef, const ParametersCosmology & Target, const redshift & z0, const ParamsP11 & params, const bool & UseCosmoRef, PowerSpectraNoResum *) ;
 static int Integrand_LoopIntegrals_CUBA (const int *ndim, const double a[], const int *ncomp, double ff[], void *params) ;
-
-// ComputeP22UV.cpp
-void P22UV (const string & PathToFolder, const ParamsP11 & params) ;
-static int Integrand_P22UV_CUBA (const int *ndim, const double a[], const int *ncomp, double ff[], void *params) ;
 
 // ComputeCounterTerms.cpp
 void ComputeCounterTerms (const ParamsP11 & params, const double & Nbar, const double & kM, const double & kNL, PowerSpectraNoResum * Ps) ;
@@ -120,7 +111,7 @@ void LoadCosmoRef (const string & PathToFolderCosmoRef, PowerSpectraNoResum * Ps
 typedef bool YesNo ;
 void LoadConfigFile (char * ConfigFile, double & nbar, double & km, double & knl, redshift & z0, ParametersCosmology & cosmo, 
 	string & PathToFolder, string & PathToFolderRD,string & PathToFolderCosmoRef, string & PathToLinearPowerSpectrum, string & PathToTriangles, 
-	YesNo & ComputePowerSpectrum, YesNo & ComputeP22UV, YesNo & ComputeBispectrum, YesNo & UseRef, YesNo & ImportM, YesNo & ExportM, 
+	YesNo & ComputePowerSpectrum, YesNo & ComputeBispectrum, YesNo & UseRef, YesNo & ImportM, YesNo & ExportM, 
 	PrecisionIntegr & Eps, double & EpsRel_IntegrBispectrumAP, double & aperp, double & apar) ;
 
 

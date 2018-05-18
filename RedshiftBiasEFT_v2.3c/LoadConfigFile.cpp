@@ -8,7 +8,7 @@ static YesNo GetAnswer (const string & Answer) {
 
 void LoadConfigFile (char * ConfigFile, double & nbar, double & km, double & knl, redshift & z0, ParametersCosmology & cosmo, 
 	string & PathToFolder, string & PathToFolderRD,string & PathToFolderCosmoRef, string & PathToLinearPowerSpectrum, string & PathToTriangles, 
-	YesNo & ComputePowerSpectrum, YesNo & ComputeP22UV, YesNo & ComputeBispectrum, YesNo & UseRef, YesNo & ImportM, YesNo & ExportM, 
+	YesNo & ComputePowerSpectrum, YesNo & ComputeBispectrum, YesNo & UseRef, YesNo & ImportM, YesNo & ExportM, 
 	PrecisionIntegr & Eps, double & EpsRel_IntegrBispectrumAP, double & aperp, double & apar) {
 
 ///// Reading ini file /////
@@ -42,7 +42,6 @@ void LoadConfigFile (char * ConfigFile, double & nbar, double & km, double & knl
 		else if (strcmp(token, "km") == 0) while ((token = strtok(NULL, delim)) != NULL) km = atof(token) ;
 		else if (strcmp(token, "nbar") == 0) while ((token = strtok(NULL, delim)) != NULL) nbar = atof(token) ;
 		else if (strcmp(token, "ComputePowerSpectrum") == 0) while ((token = strtok(NULL, delim)) != NULL) ComputePowerSpectrum = GetAnswer(token) ;
-		else if (strcmp(token, "ComputeP22UV") == 0) while ((token = strtok(NULL, delim)) != NULL) ComputeP22UV = GetAnswer(token) ;
 		else if (strcmp(token, "ComputeBispectrum") == 0) while ((token = strtok(NULL, delim)) != NULL) ComputeBispectrum = GetAnswer(token) ;
 		else if (strcmp(token, "UseCosmoRef") == 0) while ((token = strtok(NULL, delim)) != NULL) UseRef = GetAnswer(token) ;
 		else if (strcmp(token, "ImportResummationMatrix") == 0) while ((token = strtok(NULL, delim)) != NULL) ImportM = GetAnswer(token) ;

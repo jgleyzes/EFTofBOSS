@@ -48,7 +48,7 @@ int ComputeLoopIntegrals (const PrecisionIntegr & Eps, const string & PathToFold
 		string cosmo_ref_config_str = PathToFolderCosmoRef + "/cosmo_ref.ini" ; 
 		char *cosmo_ref_config = new char[cosmo_ref_config_str.length() + 1] ; 
 		strcpy(cosmo_ref_config, cosmo_ref_config_str.c_str()) ;
-		LoadConfigFile (cosmo_ref_config, d1, d2, d3, z_ref, cosmo_ref, d4, d5,d5bis,d5ter, d5quater, d6, d6bis,d6ter,d7, d8, d9, d10, d11, d12, d13) ;
+		LoadConfigFile (cosmo_ref_config, d1, d2, d3, z_ref, cosmo_ref, d4, d5,d5bis,d5ter, d5quater, d6, d6bis, d7, d8, d9, d10, d11, d12, d13) ;
 		
 		// If it happens that the cosmology and redshift under evaluation are the same as the ones of cosmo_ref, we are done.
 		if ( cosmo_ref[0] == Target[0] && cosmo_ref[1] == Target[1] && cosmo_ref[2] == Target[2] && cosmo_ref[3] == Target[3] && cosmo_ref[4] == Target[4] && z_ref == z0) {
@@ -118,6 +118,7 @@ int ComputeLoopIntegrals (const PrecisionIntegr & Eps, const string & PathToFold
     		(*Ps)[i][10][m] = (*MultipoleExpansion[9])[i]*Integrals[9][m] ;																										// b2*b4
     		(*Ps)[i][11][m] = (*MultipoleExpansion[10])[i]*Integrals[10][m] ;																									// b4*b4
     	
+
     		///// CosmoRef ////////////////////////////
     		if (UseCosmoRef == true) for (unsigned int n = 0 ; n < 12 ; n++) (*Ps)[i][n][m] += integr.RescaleFactor * Pref[i][n][m] ;
     		///////////////////////////////////////////
@@ -135,8 +136,8 @@ static int Integrand_LoopIntegrals_CUBA (const int *ndim, const double a[], cons
 	double q = CutIR + (CutUV-CutIR)*a[0] ;
 	double x = -1.+2.*a[1] ;
 
-	if (p.UseCosmoRef == 0) ff[0] = (CutUV-CutIR)*2. * pow(q,2)/pow(2.*M_PI,3) * (*Integrands[p.id]) (p.k, q, x, p.p11) ;
-	else if (p.UseCosmoRef == 1) ff[0] = (CutUV-CutIR)*2. * pow(q,2)/pow(2.*M_PI,3) * ( (*Integrands[p.id]) (p.k, q, x, p.p11) - p.RescaleFactor * (*Integrands[p.id]) (p.k, q, x, p.p11ref) ) ;
+	if (p.UseCosmoRef == 0) ff[0] = (CutUV-CutIR)*2. * pow(q,2)/pow(2.*M_PI,3) * Integrands(p.id, p.k, q, x, p.p11) ;
+	else if (p.UseCosmoRef == 1) ff[0] = (CutUV-CutIR)*2. * pow(q,2)/pow(2.*M_PI,3) * ( Integrands(p.id, p.k, q, x, p.p11) - p.RescaleFactor * Integrands(p.id, p.k, q, x, p.p11ref) ) ;
 
 	return 0 ;
 }
