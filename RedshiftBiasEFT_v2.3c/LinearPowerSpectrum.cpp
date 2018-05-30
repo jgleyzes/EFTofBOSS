@@ -22,7 +22,7 @@ void LoadP11 (const string & LinearPowerSpectrumData, const ParametersCosmology 
 	// count points number
 	while (p11data >> ki >> P11i) {
 		if (NPoints == 0 && ki > 1e-4) {
-			cerr << "Please choose a linear power spectrum data file with kmin < 1e-4" << endl ;
+			cerr << "Please choose a linear power spectrum data file with kmin < " << CutIR << endl ;
 			exit(EXIT_FAILURE) ;
 		}
 		NPoints++ ;

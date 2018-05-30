@@ -36,7 +36,8 @@ for (unsigned order = 0 ; order < 2 ; order++) {
 	if (order == 1) {
 		Morder = 0 ;
 		Np = N1 ;
-		Nlp = 5 ;
+		//Nlp = 5 ;
+		Nlp = 3 ;
 		Ps = Loop ;
 	}
 	

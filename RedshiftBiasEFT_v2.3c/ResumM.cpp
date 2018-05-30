@@ -17,8 +17,9 @@ void ResumM (const string & PathToFolderRD, const ParamsP11 & params, const bool
 	for (unsigned int order = 0 ; order < 2 ; order++) {
 
 		size_t Nlp ;
-		if (order == 0) Nlp = 5 ;
-		if (order == 1) Nlp = 3 ;
+		//if (order == 0) Nlp = 5 ;
+		//if (order == 1) Nlp = 3 ;
+		Nlp = 3 ;
 		
 		for (unsigned int j = 0 ; j < Nlp ; j++) { // loop over lp
 
@@ -43,7 +44,6 @@ void ResumM (const string & PathToFolderRD, const ParamsP11 & params, const bool
 
 						double ChangeToSphericalBessel = pow(kplist[n],-0.5) ;
 						
-
 						if (order == 0) Mhat[n] = ChangeToSphericalBessel *  ResumQ0(l,lp,k,kplist[n],InterpX1,InterpY1,X1Infinity,params.f) ;
 						if (order == 1) Mhat[n] = ChangeToSphericalBessel *  ResumQ1(l,lp,k,kplist[n],InterpX1,InterpY1,X1Infinity,params.f) ;
 					}
@@ -52,8 +52,8 @@ void ResumM (const string & PathToFolderRD, const ParamsP11 & params, const bool
     				double kres[Nkp] ;
     				dcomplex result[Nkp] ;
     				
-    				//fht(Nkp, kplist, Mhat, kres, result, lp+0.5, 0., kcrc, false, u) ;	
-    				fht(Nkp, kplist, Mhat, kres, result, lp+0.5, 0.) ;	
+    				fht(Nkp, kplist, Mhat, kres, result, lp+0.5, 0., kcrc, false, u) ;	
+    				//fht(Nkp, kplist, Mhat, kres, result, lp+0.5, 0.) ;	
 
     				for (unsigned int n = 0 ; n < Nkp ; n++) {
     					(*TableM)[0][order][i][j][m][n] = kres[n] ;

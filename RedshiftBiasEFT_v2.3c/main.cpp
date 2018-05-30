@@ -2,6 +2,10 @@
 #include "ResumEFT.h"
 
 #include <ctime>
+#include <ratio>
+#include <chrono>
+
+using namespace std::chrono;
 
 int main(int argc, char *argv[]) {
 
@@ -45,19 +49,17 @@ int main(int argc, char *argv[]) {
 
 		static StoreM TableM ;
 
-
-		int start_s=clock() ;
+		steady_clock::time_point start = steady_clock::now();
 
 		///////////// ONE-LOOP POWER SPECTRUM WITH RESUMMATION IN REDSHIFT SPACE (3 FIRST MULTIPOLES) ///////
 		if (ComputePowerSpectrum == true) {
 
 			if (ImportM == false) ResumM (PathToFolderRD, paramsP11, ExportM, &TableM) ;
-
 			ComputePowerSpectraLinearNoResum  (paramsP11, &PsLinear) ;
 			ComputePowerSpectra1LoopNoResum (Eps, PathToFolder,PathToFolderRD,PathToFolderCosmoRef, cosmo, z0, paramsP11, UseRef, nbar, km, knl, &Ps1Loop) ;
 
 			//ExportPowerSpectraNoResum (PathToFolder, 0, &PsLinear) ;
-			ExportPowerSpectraNoResum (PathToFolder, 1, &Ps1Loop) ;
+			//ExportPowerSpectraNoResum (PathToFolder, 1, &Ps1Loop) ;
 
 			ResumPowerSpectra (PathToFolder,PathToFolderRD, paramsP11, &PsLinear, &Ps1Loop, ImportM, ExportM, &TableM) ;
 		}
@@ -68,9 +70,10 @@ int main(int argc, char *argv[]) {
 			ComputeBispectrumMonopole (EpsRel_IntegrBispectrumAP, PathToFolder, PathToTriangles, paramsP11, nbar, aperp, apar) ;
 		}
 
-		int stop_s=clock() ;
+		steady_clock::time_point stop = steady_clock::now();
+		duration<double> runtime = duration_cast<duration<double>>(stop-start);
 
-		cout << "RedshiftBiasEFT ran in " << (stop_s-start_s)/double(CLOCKS_PER_SEC) << " seconds." << endl ;
+		cout << "RedshiftBiasEFT ran in " << runtime.count() << " seconds." << endl ;
 
 		
 		///////////////////////////
