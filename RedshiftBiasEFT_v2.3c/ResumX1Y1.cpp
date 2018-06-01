@@ -3,9 +3,9 @@
 #include <gsl/gsl_sf_bessel.h>
 
 #define LIMIT 1000
-#define EPSABS 0
+#define EPSABS 1e-5
 #define EPSREL 1e-3
-#define MIN 0.0001
+#define MIN 0.01
 #define MAX 1
 
 const double CutResum = 0.066 ;
