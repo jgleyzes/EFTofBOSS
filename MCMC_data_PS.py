@@ -96,21 +96,23 @@ def get_grid(gridname,nbinsAs=100,nbins = 50,withBisp=False):
 
     TablePlin = np.load(opa.abspath(opa.join(INPATH,'GridsEFT/TablePlin%s.npy'%gridname)))
     TablePloop = np.load(opa.abspath(opa.join(INPATH,'GridsEFT/TablePloop%s.npy'%gridname)))
+    Tablesigsq = np.load(opa.abspath(opa.join(INPATH,'GridsEFT/Tablesigsq%s.npy'%gridname)))
 
     Plininterp = scipy.interpolate.RegularGridInterpolator((lnAstab,Omtab,htab),TablePlin.reshape((nbinsAs,nbins,nbins,TablePlin.shape[-2],TablePlin.shape[-1])))
     Ploopinterp = scipy.interpolate.RegularGridInterpolator((lnAstab,Omtab,htab),TablePloop.reshape((nbinsAs,nbins,nbins,TablePloop.shape[-2],TablePloop.shape[-1])))
+    Sigsqinterp = scipy.interpolate.RegularGridInterpolator((lnAstab,Omtab,htab),Tablesigsq.reshape((nbinsAs,nbins,nbins)))
     
-    interpolations = [Plininterp,Ploopinterp]
+    interpolations = [Plininterp,Ploopinterp,Sigsqinterp]
     if withBisp:
         TableBisp = np.load(opa.abspath(opa.join(INPATH,'GridsEFT/TableBisp%s.npy'%gridname)))
         Bispinterp = scipy.interpolate.RegularGridInterpolator((lnAstab,Omtab,htab),TableBisp.reshape((nbinsAs,nbins,nbins,TableBisp.shape[-2],TableBisp.shape[-1])))
-        interpolations = [Plininterp,Ploopinterp,Bispinterp]
+        interpolations = [Plininterp,Ploopinterp,Sigsqinterp,Bispinterp]
         
     return lnAsmin,lnAsmax,Ommin,Ommax,hmin,hmax,interpolations
     
     
     
-def computePS(cvals,datalin,dataloop,setkin,setkout,sigsq=-100):
+def computePS(cvals,datalin,dataloop,setkin,setkout,sigsq=0):
     
     """ Computes the power spectra given the b_i and the EFT power spectra
 
@@ -121,7 +123,7 @@ def computePS(cvals,datalin,dataloop,setkin,setkout,sigsq=-100):
         dataloop : the loop power spectra from the EFT, with shape (multipoles, b_i, k)
         setkin : the values of k from the input power spectra (must match datalin and dataloop)
         setkout : the values of k for the output power spectra
-        removesqsig: whether or not to remove the piece of P22 which is constant at low k
+        sigsq: The sigma^2 that needs to be removed, corresponding to the constant piece of the loop terms
 
         Outputs
         ------
@@ -279,9 +281,9 @@ def lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,fiducial, inter
         
     # Import the power spectra interpolators on the grid
         if withBisp:
-            Plininterp,Ploopinterp,Bispinterp = interpolation_grid
+            Plininterp,Ploopinterp,Sigsqinterp,Bispinterp = interpolation_grid
         else:
-            Plininterp,Ploopinterp = interpolation_grid 
+            Plininterp,Ploopinterp,Sigsqinterp = interpolation_grid 
             Bispinterp = None
         
         kfull = Ploopinterp((lnAs,Om,h))[:,0]
@@ -290,14 +292,17 @@ def lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,fiducial, inter
             kfull = kfull[:len(kfull)/3] 
         
         Ploop = np.swapaxes(Ploopinterp((lnAs,Om,h)).reshape(3,len(kfull),22),axis1 = 1,axis2 = 2)[:,1:,:]
-        Plin = np.swapaxes(Plininterp((lnAs,Om,h)).reshape(3,len(kfull),4),axis1 = 1,axis2 = 2)[:,1:,:]       
+        Plin = np.swapaxes(Plininterp((lnAs,Om,h)).reshape(3,len(kfull),4),axis1 = 1,axis2 = 2)[:,1:,:]         
         
         # Get sigma^2 to be removed
+        sigsq = Sigsqinterp((lnAs,Om,h))  
+        
+        
         
      
         # Compute the PS       
         valueb = np.array([b1,b2,b3,b4,b5,b6,b7,b8,b9,b10])        
-        Pmodel_original = computePS(valueb,Plin,Ploop,kfull,kfull,sigsq=0)
+        Pmodel_original = computePS(valueb,Plin,Ploop,kfull,kfull,sigsq=sigsq)
         Pmodel = Pmodel_original.copy()
     
         #The AP parameters
@@ -317,9 +322,22 @@ def lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,fiducial, inter
             if type(dataQ) ==  type(None):
                 raise Exception('You want to account for window function but forgot to provide a dataQ (array of shape (8,n)) obtained from the sims. Can be found in input/dataQ')
             else: 
-                k_junc_high = 9
-                k_junc_low = 6e-4
-                Pmodel = WindowFFTlog.transformQ(np.concatenate(Pmodel),np.concatenate([kfull,kfull,kfull]),xdata,dataQ,kr=0.5,extrap=True,k_junc_low=k_junc_low,k_junc_high=k_junc_high,ktr=4,sig=0.5)
+                k_junc_high = 0.5
+                k_junc_low = kfull[1]
+                
+                # In principle there is a damping function applied to the hole power spectrum. It is a step function controlled by
+                # a k transition ktr and a slope sigma. With the choice below, the function as no effect.
+                ktr = 100
+                sig = 0.5
+                
+                #This is for the FFT (essentially, the product of the midpoints of the k and r arrays)
+                kr = 0.5
+                
+                #This ensures that at high k, the extrapolation is of the for b(k/k_high)^c x exp(-a(k-khigh)/khigh), where a is positive and damps the power spectrum
+                
+                damp = True
+                
+                Pmodel = WindowFFTlog.transformQ(np.concatenate(Pmodel),np.concatenate([kfull,kfull,kfull]),xdata,dataQ,kr=kr,damp=True,extrap=True,k_junc_low=k_junc_low,k_junc_high=k_junc_high,ktr=ktr,sig=sig,)
         else:
             Pmodel = APpowerspectraNkmu.changetoAPnobinning(Pmodel,kfull,xdata,1,1) #This is just to interpolate the power spectrum on xdata
     
@@ -352,7 +370,7 @@ def lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,fiducial, inter
             step1 = np.dot(Cinv,diff)
             chi2 = np.dot(diff,step1)
             #print('chi2nan = ' + str(chi2))    
-            
+        #print(chi2)    
         return -0.5*chi2
 
 
@@ -409,14 +427,14 @@ if __name__ ==  "__main__":
     series_cosmo = dfcosmo.loc[simtype]
     
     
-    gridname = 'conCFAlbert'#series_cosmo.loc['gridname']+'morepoint_True'
+    gridname = 'LightConeHectorv1.13'#
     
 
     # COSMOLOGICAL GLOBALS: fiducial model (should match input sim data!)
     Om_fid  =  series_cosmo.loc['Omega_m']
     lnAs_fid = series_cosmo.loc['lnAs']
     h_fid  =  series_cosmo.loc['h']
-    z_pk = series_cosmo.loc['z_pk']
+    z_pk = 0.57#series_cosmo.loc['z_pk']
     
     fiducial = [lnAs_fid,Om_fid,h_fid]
 
@@ -556,6 +574,8 @@ if __name__ ==  "__main__":
         free_ml = all_ml[free_para]
 
         minchi2  =  result["fun"]
+        print('minchi2 = ' + str(minchi2))
+        print(free_ml)
         
         if type(masktriangle) == type(None):
             dof = len(xdata) - ndim

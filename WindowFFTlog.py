@@ -16,7 +16,7 @@ THIS_PATH = opa.dirname(opa.dirname(__file__))
 
 # Data paths
 OUTPATH = opa.abspath(opa.join(THIS_PATH,'clustools/MCMC/output/'))
-
+INPATH = '/Users/jgleyzes/Documents/Projets/EFTofLSS/Python/MCMCEFT/input'
 import APpowerspectraNkmu
 
 def check_if_multipoles_k_array(setk):
@@ -66,9 +66,9 @@ def get_powerlaw_junc(kjunc,Pfunc,dlnx=0.1,damp=False):
     
     
     if damp :
-            a = (kjunc*(kjunc*P1**2 - P*(P1 + kjunc*P2)))/P**2
+            a = 0.5
             b = float(P)
-            c = (kjunc**2*(P1**2 - P*P2))/P**2
+            c = float(a + (kjunc*P1)/P)
             return a,b,c
     else :
             b = P
@@ -154,7 +154,12 @@ def ExtrapolationPk(Pk,setk,setkextrap,k_junc_low = 0.02,k_junc_high=0.4,ktr=4,s
         if damp :
             highk = setkextrap[setkextrap > k_junc_high]
             a_high,b_high,c_high = get_powerlaw_junc(k_junc_high,Pkfunc,damp=damp)
+            while c_high > 0 and ntry < 30:
+                k_junc_high =  (0.2) * np.random.random(1) + k_junc_high - 0.1
+                a_high,b_high,c_high = get_powerlaw_junc(k_junc_high,Pkfunc,damp=damp)
+                ntry += 1
             Phighk = b_high*(highk/k_junc_high)**(c_high)*np.exp(-a_high*(highk-k_junc_high)/k_junc_high)
+            print(a_high,b_high,c_high)
         else :
             b_high,c_high = get_powerlaw_junc(k_junc_high,Pkfunc,damp=False)
             while abs(c_high) > 10 and ntry < 30:
@@ -359,10 +364,10 @@ if __name__ ==  "__main__":
 
 
     # Model
-    kmodel = np.load(opa.join(OUTPATH,'Ploop_fid_PatchyHector.npy'))[0,0]#kclass#[maskk]#
+    kmodel = np.load(opa.join(INPATH,'Ploopfidnewgridv1.13.npy'))[0,0]#kclass#[maskk]#
     kmodel3  = np.concatenate([kmodel ,kmodel ,kmodel ])
-    Ploopfid = np.load(opa.join(OUTPATH,'Ploop_fid_PatchyHector.npy'))[:,1:]
-    Plinfid = np.load(opa.join(OUTPATH,'Plin_fid_PatchyHector.npy'))[:,1:]
+    Ploopfid = np.load(opa.join(INPATH,'Ploopfidnewgridv1.13.npy'))[:,1:]
+    Plinfid = np.load(opa.join(INPATH,'Plinfidnewgridv1.13.npy'))[:,1:]
     inipos = np.array([2]+9*[0])#np.array([2.03395135,  -6.15044179,   1.21410315,   7.19087139,
     #11.61423533, -33.46605767,   1.58262629, -44.64033227, 57.43130091,  26.44292187])
 
@@ -384,15 +389,15 @@ if __name__ ==  "__main__":
     PSTPw = np.array([P0SPTw,P2SPTw,P4SPTw])
     dataQ = np.loadtxt(opa.join(OUTPATH,'DataBispec/W_v4_NGC_mask_DR12cmass_50pc.txt')).T
 
-    Pkin = np.concatenate([P0SPT,P2SPT,P4SPT])#np.concatenate([P0model,P2model,P4model])
-    setkin = np.concatenate([kPSPT,kPSPT,kPSPT])#kmodelfine3
-    setkout = np.concatenate([kPSPT,kPSPT,kPSPT])
-    kjunchigh = 0.95*setkin.max()
-    ktr = 3
-    sig = 1
+    Pkin = np.concatenate([P0model,P2model,P4model])#np.concatenate([P0SPT,P2SPT,P4SPT])#
+    setkin = kmodelfine3#np.concatenate([kPSPT,kPSPT,kPSPT])
+    setkout = np.concatenate([kPSPT,kPSPT,kPSPT])#
+    kjunchigh = 0.6#0.95*setkin.max()
+    ktr = 1000
+    sig = 0.5
     withlog = False
-    dampl4 = False
-    PStransformed = np.concatenate(transformQ(Pkin,setkin,setkout,dataQ,n=64*64,kr=0.5,extrap=True,setkextrap= 10**(np.linspace(-5,np.log10(2*kjunchigh),200)),k_junc_low=setkin.min(),k_junc_high=kjunchigh,ktr=ktr,sig=sig,withlog=withlog,damp=dampl4))
+    dampl4 = True
+    PStransformed = np.concatenate(transformQ(Pkin,setkin,setkout,dataQ,n=64*64,kr=0.5,extrap=True,setkextrap= 10**(np.linspace(-5,np.log10(2*kjunchigh),200)),k_junc_low=setkin[1],k_junc_high=kjunchigh,ktr=ktr,sig=sig,withlog=withlog,damp=dampl4))
     
     nkout = len(setkout)/3
     nkin = len(setkin)/3
@@ -402,7 +407,7 @@ if __name__ ==  "__main__":
     for l in range(3):
          
         plt.plot(setkin[l*nkin:(l+1)*nkin],Pkin[l*nkin:(l+1)*nkin], color=dictcolor[str(l)],label='l = ' +str(l) + ' Original')
-        plt.plot(kPSPT,PSTPw[l], color=dictcolor[str(l)],label='l = ' +str(l) + ' Hector',ls='-.')
+        #plt.plot(kPSPT,PSTPw[l], color=dictcolor[str(l)],label='l = ' +str(l) + ' Hector',ls='-.')
         plt.plot(setkout[l*nkout:(l+1)*nkout],PStransformed[l*nkout:(l+1)*nkout], color=dictcolor[str(l)], ls='--',label='l = ' + str(l)+ r' with $Q_\ell$')
     #plt.axvline((2*np.pi)/Lbox,color='k')
     plt.axvline(kmin,color='grey',ls='--')
