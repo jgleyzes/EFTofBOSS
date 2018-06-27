@@ -360,7 +360,7 @@ def lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,fiducial, inter
         ntry = 0
         while (np.isnan(chi2) and ntry<30):
             k_junc_high =  (0.2) * np.random.random(1) + k_junc_high - 0.1
-            while k_junc_high > 0.8:
+            while k_junc_high > 0.8 or k_junc_high < 0.4:
                 k_junc_high =  (0.2) * np.random.random(1) + k_junc_high - 0.1
                 
             Pmodelfinal = WindowFFTlog.transformQ(np.concatenate(Pmodel),np.concatenate([kfull,kfull,kfull]),xdata,dataQ,kr=kr,damp=damp,extrap=True,k_junc_low=k_junc_low,k_junc_high=k_junc_high,ktr=ktr,sig=sig)
