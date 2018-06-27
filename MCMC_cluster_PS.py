@@ -17,6 +17,7 @@ import pandas as pd
 import os.path as opa
 import time
 from scipy import stats
+import sys
 
 ###########################################
 ###  Globals ##############################
@@ -330,12 +331,13 @@ def lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,fiducial, inter
                 
                 damp = True
                 
-                Pmodel = WindowFFTlog.transformQ(np.concatenate(Pmodel),np.concatenate([kfull,kfull,kfull]),xdata,dataQ,kr=kr,damp=True,extrap=True,k_junc_low=k_junc_low,k_junc_high=k_junc_high,ktr=ktr,sig=sig,)
+                Pmodelfinal = WindowFFTlog.transformQ(np.concatenate(Pmodel),np.concatenate([kfull,kfull,kfull]),xdata,dataQ,kr=kr,damp=damp,extrap=True,k_junc_low=k_junc_low,k_junc_high=k_junc_high,ktr=ktr,sig=sig)
         else:
-            Pmodel = APpowerspectraNkmu.changetoAPnobinning(Pmodel,kfull,xdata,1,1) #This is just to interpolate the power spectrum on xdata
+            Pmodelfinal = APpowerspectraNkmu.changetoAPnobinning(Pmodel,kfull,xdata,1,1) #This is just to interpolate the power spectrum on xdata
     
         
-        modelX = np.concatenate(Pmodel)
+        
+        modelX = np.concatenate(Pmodelfinal)
                     
         if withBisp:
             if type(masktriangle) ==  type(None) or type(Bispdata) == type(None) or type(Bispinterp) ==  type(None):
@@ -355,6 +357,20 @@ def lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,fiducial, inter
         diff  =  (modelX - ydata)
         step1 = np.dot(Cinv,diff)
         chi2 = np.dot(diff,step1)
+        ntry = 0
+        while (np.isnan(chi2) and ntry<30):
+            k_junc_high =  (0.2) * np.random.random(1) + k_junc_high - 0.1
+            while k_junc_high > 0.8:
+                k_junc_high =  (0.2) * np.random.random(1) + k_junc_high - 0.1
+                
+            Pmodelfinal = WindowFFTlog.transformQ(np.concatenate(Pmodel),np.concatenate([kfull,kfull,kfull]),xdata,dataQ,kr=kr,damp=damp,extrap=True,k_junc_low=k_junc_low,k_junc_high=k_junc_high,ktr=ktr,sig=sig)
+            modelX = np.concatenate(Pmodelfinal)
+            if withBisp:
+                modelX = np.concatenate([modelX,Bisp[masktriangle]])
+            diff  =  (modelX - ydata)
+            step1 = np.dot(Cinv,diff)
+            chi2 = np.dot(diff,step1)
+            ntry += 1
         if np.isnan(chi2):
             modelX = np.concatenate(APpowerspectraNkmu.changetoAPnobinning(Pmodel_original,kfull,xdata,qperp,qpar))
             if withBisp:
@@ -362,8 +378,10 @@ def lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,fiducial, inter
             diff  =  (modelX - ydata)
             step1 = np.dot(Cinv,diff)
             chi2 = np.dot(diff,step1)
-            #print('chi2nan = ' + str(chi2))    
-        #print(chi2)    
+            if chi2<200:
+                print('chi2nan = ' + str(chi2))  
+                print('theta = ')
+                print(theta)
         return -0.5*chi2
 
 
@@ -434,8 +452,8 @@ if __name__ ==  "__main__":
     #For lightcone simulations, need to specify north or south for now (later, merge the two but I'm missing the covariance for SGC
     ZONE = 'NGC'
     
-    boxnumber = 1 
-    KMAX = 0.2
+    boxnumber = sys.argv[1]
+    KMAX = float(sys.argv[2])
     kmin = 0.01
     kminbisp = kmin
     kmaxbisp = 0.05
