@@ -467,7 +467,6 @@ if __name__ ==  "__main__":
     
     runtype = simtype+ZONE
     
-    withBisp = False
     
     if withBisp:
         runtype += 'withBispkmax%s'%kmaxbisp
