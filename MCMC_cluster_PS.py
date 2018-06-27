@@ -36,7 +36,7 @@ import WindowFFTlog
 INPATH = opa.abspath(opa.join(THIS_PATH,'input')) 
 OUTPATH = opa.abspath(opa.join(THIS_PATH,'output')) 
 
-gridname = 'LightConeHectorv1.13'#
+gridname = 'conLightConeHectorv1.13'#
 withBisp = True
 ###########################################
 ###  Functions  ###########################
