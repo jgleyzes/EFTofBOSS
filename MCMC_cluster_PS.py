@@ -271,6 +271,7 @@ def lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,fiducial, inter
     if not np.isfinite(lnprior(theta, free_para, fix_para,bounds)):
         return -100000
     else :
+        t0 =  time.time()
         lnAs,Om,h,b1,b2,b3,b4,b5,b6,b7,b8,b9,b10,b11 = match_para(theta, free_para, fix_para)
         
     # Import the power spectra interpolators on the grid
@@ -357,31 +358,39 @@ def lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,fiducial, inter
         diff  =  (modelX - ydata)
         step1 = np.dot(Cinv,diff)
         chi2 = np.dot(diff,step1)
-        ntry = 0
-        while (np.isnan(chi2) and ntry<30):
-            k_junc_high =  (0.2) * np.random.random(1) + k_junc_high - 0.1
-            while k_junc_high > 0.8 or k_junc_high < 0.4:
-                k_junc_high =  (0.2) * np.random.random(1) + k_junc_high - 0.1
-                
-            Pmodelfinal = WindowFFTlog.transformQ(np.concatenate(Pmodel),np.concatenate([kfull,kfull,kfull]),xdata,dataQ,kr=kr,damp=damp,extrap=True,k_junc_low=k_junc_low,k_junc_high=k_junc_high,ktr=ktr,sig=sig)
-            modelX = np.concatenate(Pmodelfinal)
-            if withBisp:
-                modelX = np.concatenate([modelX,Bisp[masktriangle]])
-            diff  =  (modelX - ydata)
-            step1 = np.dot(Cinv,diff)
-            chi2 = np.dot(diff,step1)
-            ntry += 1
         if np.isnan(chi2):
-            modelX = np.concatenate(APpowerspectraNkmu.changetoAPnobinning(Pmodel_original,kfull,xdata,qperp,qpar))
+            modelX_original = np.concatenate(APpowerspectraNkmu.changetoAPnobinning(Pmodel_original,kfull,xdata,qperp,qpar))
             if withBisp:
-                modelX = np.concatenate([modelX,Bisp[masktriangle]])
-            diff  =  (modelX - ydata)
-            step1 = np.dot(Cinv,diff)
-            chi2 = np.dot(diff,step1)
-            if chi2<200:
-                print('chi2nan = ' + str(chi2))  
-                print('theta = ')
-                print(theta)
+                modelX_original = np.concatenate([modelX,Bisp[masktriangle]])
+            diff_original  =  (modelX_original - ydata)
+            step1_original = np.dot(Cinv,diff_original)
+            chi2_original = np.dot(diff,step1_original)
+            if chi2_original<200:
+                
+                ntry = 0
+                while (np.isnan(chi2) and ntry<20):
+                    k_junc_high =  (0.2) * np.random.random(1) + k_junc_high - 0.1
+                    while k_junc_high > 0.7 or k_junc_high < 0.4:
+                        k_junc_high =  (0.2) * np.random.random(1) + k_junc_high - 0.1
+                
+                    Pmodelfinal = WindowFFTlog.transformQ(np.concatenate(Pmodel),np.concatenate([kfull,kfull,kfull]),xdata,dataQ,kr=kr,damp=damp,extrap=True,k_junc_low=k_junc_low,k_junc_high=k_junc_high,ktr=ktr,sig=sig)
+                    modelX = np.concatenate(Pmodelfinal)
+                    if withBisp:
+                        modelX = np.concatenate([modelX,Bisp[masktriangle]])
+                    diff  =  (modelX - ydata)
+                    step1 = np.dot(Cinv,diff)
+                    chi2 = np.dot(diff,step1)
+                    ntry += 1
+                if np.isnan(chi2):
+                    chi2 = chi2_original
+                    print('chi2nan = ' + str(chi2))  
+                    print('theta = ')
+                    print(theta)
+                    print(time.time()-t0)
+            else:
+                    chi2 = chi2_original
+
+        
         return -0.5*chi2
 
 
@@ -452,8 +461,10 @@ if __name__ ==  "__main__":
     #For lightcone simulations, need to specify north or south for now (later, merge the two but I'm missing the covariance for SGC
     ZONE = 'NGC'
     
-    boxnumber = 1
-    KMAX = 0.2#float(sys.argv[2])
+
+    boxnumber = sys.argv[1]
+    KMAX = float(sys.argv[2])
+
     kmin = 0.01
     kminbisp = kmin
     kmaxbisp = 0.05
@@ -706,4 +717,6 @@ if __name__ ==  "__main__":
 
     mcmc_array  =  map(lambda v: (v[1], v[2]-v[1], v[1]-v[0], v[4]-v[1], v[1]-v[3]), zip(*np.percentile(np.array(samplesJG).reshape((-1,ndim)), [15.86555, 50, 84.13445, 2.2775, 97.7225], axis = 0)))
 
+
     np.savetxt(opa.join(OUTPATH,"mcmcarray%sbox_%skmax_%s.txt")%(runtype,boxnumber,kmax),mcmc_array)
+
