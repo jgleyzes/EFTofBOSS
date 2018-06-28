@@ -364,14 +364,13 @@ def lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,fiducial, inter
                 modelX_original = np.concatenate([modelX,Bisp[masktriangle]])
             diff_original  =  (modelX_original - ydata)
             step1_original = np.dot(Cinv,diff_original)
-            chi2_original = np.dot(diff,step1_original)
+            chi2_original = np.dot(diff_original,step1_original)
+            
             if chi2_original<200:
                 
                 ntry = 0
-                while (np.isnan(chi2) and ntry<20):
-                    k_junc_high =  (0.2) * np.random.random(1) + k_junc_high - 0.1
-                    while k_junc_high > 0.7 or k_junc_high < 0.4:
-                        k_junc_high =  (0.2) * np.random.random(1) + k_junc_high - 0.1
+                while (np.isnan(chi2) and ntry<10):
+                    k_junc_high =  (0.6-0.4)*np.random.random(1) +0.4
                 
                     Pmodelfinal = WindowFFTlog.transformQ(np.concatenate(Pmodel),np.concatenate([kfull,kfull,kfull]),xdata,dataQ,kr=kr,damp=damp,extrap=True,k_junc_low=k_junc_low,k_junc_high=k_junc_high,ktr=ktr,sig=sig)
                     modelX = np.concatenate(Pmodelfinal)
