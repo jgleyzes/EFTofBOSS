@@ -358,7 +358,7 @@ def lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,fiducial, inter
         diff  =  (modelX - ydata)
         step1 = np.dot(Cinv,diff)
         chi2 = np.dot(diff,step1)
-        if np.isnan(chi2):
+        if np.isnan(chi2) or chi2>1000:
             modelX_original = np.concatenate(APpowerspectraNkmu.changetoAPnobinning(Pmodel_original,kfull,xdata,qperp,qpar))
             if withBisp:
                 modelX_original = np.concatenate([modelX,Bisp[masktriangle]])
@@ -369,7 +369,7 @@ def lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,fiducial, inter
             if chi2_original<200:
                 
                 ntry = 0
-                while (np.isnan(chi2) and ntry<10):
+                while ((np.isnan(chi2) or chi2>1000) and ntry<10):
                     k_junc_high =  (0.6-0.4)*np.random.random(1) +0.4
                 
                     Pmodelfinal = WindowFFTlog.transformQ(np.concatenate(Pmodel),np.concatenate([kfull,kfull,kfull]),xdata,dataQ,kr=kr,damp=damp,extrap=True,k_junc_low=k_junc_low,k_junc_high=k_junc_high,ktr=ktr,sig=sig)
