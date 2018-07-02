@@ -155,9 +155,7 @@ def ExtrapolationPk(Pk,setk,setkextrap,k_junc_low = 0.02,k_junc_high=0.4,ktr=4,s
             highk = setkextrap[setkextrap > k_junc_high]
             a_high,b_high,c_high = get_powerlaw_junc(k_junc_high,Pkfunc,damp=damp)
             while (c_high > 0 or c_high<-10) and ntry < 30:
-                k_junc_high =  (0.2) * np.random.random(1) + k_junc_high - 0.1
-                while k_junc_high > 0.8 or k_junc_high < 0.4:
-                    k_junc_high =  (0.2) * np.random.random(1) + k_junc_high - 0.1
+                k_junc_high =  (0.6-0.4)*np.random.random(1) +0.4
                 a_high,b_high,c_high = get_powerlaw_junc(k_junc_high,Pkfunc,damp=damp)
                 ntry += 1
             Phighk = b_high*(highk/k_junc_high)**(c_high)*np.exp(-a_high*(highk-k_junc_high)/k_junc_high)
