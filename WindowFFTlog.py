@@ -42,7 +42,7 @@ def Classtomultipoles(setk,Pkclass,Om,zpk,b1=1):
     return np.array([kmulti,np.concatenate([P0k,P2k,P4k])])
         
 
-def get_powerlaw_junc(kjunc,Pfunc,dlnx=0.1,damp=False):
+def get_powerlaw_junc(kjunc,Pfunc,dlnx=0.1,damp=False,a=2):
     
     """ Get the coefficient for the power law using (b * (k/k_junc)**c) = P(k) and d/dk (b * (k/k_junc)**c) = P(k)) at k_junc.
 
@@ -66,7 +66,7 @@ def get_powerlaw_junc(kjunc,Pfunc,dlnx=0.1,damp=False):
     
     
     if damp :
-            a = 0.5
+            a = a
             b = float(P)
             c = float(a + (kjunc*P1)/P)
             return a,b,c
@@ -111,7 +111,7 @@ def fitBBKSk(k_junc,Pfunc,dx):
     return a,b,c
     
 
-def ExtrapolationPk(Pk,setk,setkextrap,k_junc_low = 0.02,k_junc_high=0.4,ktr=4,sig=0.5,withlog=False,damp = False,extraphigh=False):
+def ExtrapolationPk(Pk,setk,setkextrap,k_junc_low = 0.02,k_junc_high=0.4,ktr=4,sig=0.5,withlog=False,damp = False,extraphigh=False,nmax=10,a=2,dlnx=0.05):
     
     """ Performs an extrapolation with power laws at low and high k, using matching value and slope at the junction.
 
@@ -150,13 +150,16 @@ def ExtrapolationPk(Pk,setk,setkextrap,k_junc_low = 0.02,k_junc_high=0.4,ktr=4,s
 
         
         
+        khighlist = np.concatenate([np.linspace(0.9*k_junc_high,k_junc_high,nmax),np.linspace(k_junc_high,1.1*k_junc_high,nmax+1)[1:]])
+
+        
         
         if damp :
             highk = setkextrap[setkextrap > k_junc_high]
-            a_high,b_high,c_high = get_powerlaw_junc(k_junc_high,Pkfunc,damp=damp)
-            while (c_high > 0 or c_high<-10) and ntry < 30:
-                k_junc_high =  (0.6-0.4)*np.random.random(1) +0.4
-                a_high,b_high,c_high = get_powerlaw_junc(k_junc_high,Pkfunc,damp=damp)
+            a_high,b_high,c_high = get_powerlaw_junc(k_junc_high,Pkfunc,damp=damp,a=a,dlnx=dlnx)
+            while (c_high > 0 or c_high < -10) and ntry < 2*nmax:
+                k_junc_high =  khighlist[nmax-1+(-1)**(ntry+1)*(ntry+1)/2]
+                a_high,b_high,c_high = get_powerlaw_junc(k_junc_high,Pkfunc,damp=damp,a=a,dlnx=dlnx)
                 ntry += 1
             Phighk = b_high*(highk/k_junc_high)**(c_high)*np.exp(-a_high*(highk-k_junc_high)/k_junc_high)
          

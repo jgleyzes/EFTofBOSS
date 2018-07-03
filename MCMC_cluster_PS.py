@@ -306,18 +306,18 @@ def lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,fiducial, inter
        
     
         if not binning:
-            Pmodel = APpowerspectraNkmu.changetoAPnobinning(Pmodel,kfull,kfull,qperp,qpar)
+            PmodelAP = APpowerspectraNkmu.changetoAPnobinning(Pmodel,kfull,kfull,qperp,qpar)
         else:
             if type(TableNkmu) == type(None):
                 raise Exception('You want to account for binning but forgot to provide a TableNkmu (array of shape (3,n)) obtained from the sims/ Can be found in input/TableNkmu')
-            else : Pmodel = APpowerspectraNkmu.changetoAPbinning(Pmodel,kfull,kfull,qperp,qpar,TableNkmu)
+            else : PmodelAP = APpowerspectraNkmu.changetoAPbinning(Pmodel,kfull,kfull,qperp,qpar,TableNkmu)
     
     
         if window:
             if type(dataQ) ==  type(None):
                 raise Exception('You want to account for window function but forgot to provide a dataQ (array of shape (8,n)) obtained from the sims. Can be found in input/dataQ')
             else: 
-                k_junc_high = 0.5
+                k_junc_high = 0.27
                 k_junc_low = kfull[1]
                 
                 # In principle there is a damping function applied to the hole power spectrum. It is a step function controlled by
@@ -332,9 +332,10 @@ def lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,fiducial, inter
                 
                 damp = True
                 
-                Pmodelfinal = WindowFFTlog.transformQ(np.concatenate(Pmodel),np.concatenate([kfull,kfull,kfull]),xdata,dataQ,kr=kr,damp=damp,extrap=True,k_junc_low=k_junc_low,k_junc_high=k_junc_high,ktr=ktr,sig=sig)
+                Pmodelfinal = WindowFFTlog.transformQ(np.concatenate(PmodelAP),np.concatenate([kfull,kfull,kfull]),xdata,dataQ,kr=kr,damp=damp,
+                                                        extrap=True,k_junc_low=k_junc_low,k_junc_high=k_junc_high,ktr=ktr,sig=sig,a=2)
         else:
-            Pmodelfinal = APpowerspectraNkmu.changetoAPnobinning(Pmodel,kfull,xdata,1,1) #This is just to interpolate the power spectrum on xdata
+            Pmodelfinal = APpowerspectraNkmu.changetoAPnobinning(PmodelAP,kfull,xdata,1,1) #This is just to interpolate the power spectrum on xdata
     
         
         
@@ -358,21 +359,28 @@ def lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,fiducial, inter
         diff  =  (modelX - ydata)
         step1 = np.dot(Cinv,diff)
         chi2 = np.dot(diff,step1)
+        
         if np.isnan(chi2) or chi2>1000:
-            modelX_original = np.concatenate(APpowerspectraNkmu.changetoAPnobinning(Pmodel_original,kfull,xdata,qperp,qpar))
+            
+            modelX_original = np.concatenate(scipy.interpolate.interp1d(kfull,PmodelAP,axis=-1)(xdata[:len(xdata)/3]))#np.concatenate(APpowerspectraNkmu.changetoAPnobinning(Pmodel_original,kfull,xdata,qperp,qpar))
             if withBisp:
-                modelX_original = np.concatenate([modelX,Bisp[masktriangle]])
+                modelX_original = np.concatenate([modelX_original,Bisp[masktriangle]])
             diff_original  =  (modelX_original - ydata)
             step1_original = np.dot(Cinv,diff_original)
             chi2_original = np.dot(diff_original,step1_original)
-            
+
             if chi2_original<200:
                 
-                ntry = 0
-                while ((np.isnan(chi2) or chi2>1000) and ntry<10):
-                    k_junc_high =  (0.6-0.4)*np.random.random(1) +0.4
                 
-                    Pmodelfinal = WindowFFTlog.transformQ(np.concatenate(Pmodel),np.concatenate([kfull,kfull,kfull]),xdata,dataQ,kr=kr,damp=damp,extrap=True,k_junc_low=k_junc_low,k_junc_high=k_junc_high,ktr=ktr,sig=sig)
+                ntry = 0
+                nmax = 5
+                khighlist = np.concatenate([np.linspace(0.9*k_junc_high,k_junc_high,nmax),np.linspace(k_junc_high,1.1*k_junc_high,nmax+1)[1:]])
+                while ((np.isnan(chi2) or abs(chi2_original-chi2)>100) and ntry<10):
+                    
+                    k_junc_high =  khighlist[nmax-1+(-1)**(ntry+1)*(ntry+1)/2]
+
+                
+                    Pmodelfinal = WindowFFTlog.transformQ(np.concatenate(PmodelAP),np.concatenate([kfull,kfull,kfull]),xdata,dataQ,kr=kr,damp=damp,extrap=True,k_junc_low=k_junc_low,k_junc_high=k_junc_high,ktr=ktr,sig=sig,a=2)
                     modelX = np.concatenate(Pmodelfinal)
                     if withBisp:
                         modelX = np.concatenate([modelX,Bisp[masktriangle]])
@@ -380,16 +388,21 @@ def lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,fiducial, inter
                     step1 = np.dot(Cinv,diff)
                     chi2 = np.dot(diff,step1)
                     ntry += 1
+                print(k_junc_high,ntry)
+
                 if np.isnan(chi2):
+                    
                     chi2 = chi2_original
                     print('chi2nan = ' + str(chi2))  
                     print('theta = ')
                     print(theta)
                     print(time.time()-t0)
+                    print('ntry = '+ str(ntry))  
             else:
                     chi2 = chi2_original
 
-        
+                 
+         
         return -0.5*chi2
 
 
@@ -528,7 +541,7 @@ if __name__ ==  "__main__":
     print("Starting process")
     kmaxname = ['kmax%s'%kmax for kmax in kmaxtab]
 
-    for boxnumber in ['data']:
+    for boxnumber in [boxnumber]:
 
         kPS,PSdata,_ = np.loadtxt(opa.join(INPATH,'DataSims/ps1D_%s%s_%s.dat'%(simtype,ZONE,boxnumber))).T
 
