@@ -688,8 +688,9 @@ if __name__ ==  "__main__":
             #print("len chain  =  ", chainsamples.shape)
             withinchainvar[jj]  =  np.var(chainsamples, axis = 0)
             meanchain[jj]  =  np.mean(chainsamples, axis = 0)
-            samplesJG.append(chainsamples)
             np.save(opa.join(OUTPATH,"ChainsMidway/samplerchainmid%sbox_%skmax_%srun_%s")%(runtype,boxnumber,kmax,jj),sampler[jj].chain[:20,::10,:])
+            np.save(opa.join(OUTPATH,"ChainsMidway/lnlikechainmid%sbox_%skmax_%srun_%s")%(runtype,boxnumber,kmax,jj),sampler[jj].lnprobability[:20,::10])
+
         scalereduction  =  gelman_rubin_convergence(withinchainvar, meanchain, itercounter/2, Nchains, ndim)
         print("scalereduction  =  ", scalereduction)
         
