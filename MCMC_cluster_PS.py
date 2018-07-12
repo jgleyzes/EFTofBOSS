@@ -53,7 +53,7 @@ withBisp = True
 
 
 def Hubble(Om,z):
-    return h*((Om)*(1+z)**3.+(1-Om))**0.5
+    return ((Om)*(1+z)**3.+(1-Om))**0.5
 
 def DA(Om,z):
     r = scipy.integrate.quad(lambda x:1./Hubble(Om,x), 0, z)[0]
