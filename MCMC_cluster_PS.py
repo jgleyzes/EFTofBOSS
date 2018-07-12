@@ -35,8 +35,17 @@ import WindowFFTlog
 # Data paths
 INPATH = opa.abspath(opa.join(THIS_PATH,'input')) 
 OUTPATH = opa.abspath(opa.join(THIS_PATH,'output')) 
+# Table of cosmological parameters according to seems
 
-gridname = 'conLightConeHectorv1.13'#
+dfcosmo = pd.read_csv(opa.join(INPATH,'DataFrameCosmosims.csv'),index_col=0)
+simtype = "LightConeHector"
+    
+    
+    
+    # Load the row that we are interested in
+series_cosmo = dfcosmo.loc[simtype]
+
+gridname = series_cosmo.loc['gridname']#
 withBisp = True
 ###########################################
 ###  Functions  ###########################
@@ -446,15 +455,7 @@ def lnprob(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid, Grid,bi
 
 if __name__ ==  "__main__":
 
-    # Table of cosmological parameters according to seems
-
-    dfcosmo = pd.read_csv(opa.join(INPATH,'DataFrameCosmosims.csv'),index_col=0)
-    simtype = "LightConeHector"
     
-    
-    
-    # Load the row that we are interested in
-    series_cosmo = dfcosmo.loc[simtype]
     
     
     
