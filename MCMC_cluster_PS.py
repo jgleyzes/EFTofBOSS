@@ -35,26 +35,34 @@ import WindowFFTlog
 # Data paths
 INPATH = opa.abspath(opa.join(THIS_PATH,'input')) 
 OUTPATH = opa.abspath(opa.join(THIS_PATH,'output')) 
+# Table of cosmological parameters according to seems
 
-gridname = 'conLightConeHectorv1.13'#
+dfcosmo = pd.read_csv(opa.join(INPATH,'DataFrameCosmosims.csv'),index_col=0)
+simtype = "LightConeHector"
+    
+    
+    
+    # Load the row that we are interested in
+series_cosmo = dfcosmo.loc[simtype]
+
+gridname = series_cosmo.loc['gridname']#
 withBisp = True
 ###########################################
 ###  Functions  ###########################
 ###########################################
 
 
-def Hubble(Om,h,z):
-    return h*((Om)*(1+z)**3.+(1-Om))**0.5
+def Hubble(Om,z):
+    return ((Om)*(1+z)**3.+(1-Om))**0.5
 
-def DA(Om,h,z):
-    r = scipy.integrate.quad(lambda x:1./Hubble(Om,h,x), 0, z)[0]
+def DA(Om,z):
+    r = scipy.integrate.quad(lambda x:1./Hubble(Om,x), 0, z)[0]
     return r/(1+z)  
 
-def get_AP_param(Om,h,fiducial):
-    lnsAsfid,Omfid,hfid = fiducial
+def get_AP_param(Om,Om_fid):
         
-    qperp  =  DA(Om,h,z_pk)/DA(Omfid,hfid,z_pk)
-    qpar  =  Hubble(Omfid,hfid,z_pk)/Hubble(Om,h,z_pk)
+    qperp  =  DA(Om,z_pk)/DA(Om_fid,z_pk)
+    qpar  =  Hubble(Om_fid,z_pk)/Hubble(Om,z_pk)
     
     return qperp,qpar
 
@@ -240,7 +248,7 @@ def lnprior(theta, free_para, fix_para,bounds):
      return -np.inf
 
 
-def lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,fiducial, interpolation_grid,binning=False,TableNkmu=None, window=True,dataQ=None,withBisp=False,masktriangle=None,Bispdata=None):
+def lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid, interpolation_grid,binning=False,TableNkmu=None, window=True,dataQ=None,withBisp=False,masktriangle=None,Bispdata=None):
     
     """ Computes the log of the likelihood
     Inputs
@@ -301,7 +309,7 @@ def lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,fiducial, inter
         Pmodel = Pmodel_original.copy()
     
         #The AP parameters
-        qperp,qpar = get_AP_param(Om,h,fiducial)
+        qperp,qpar = get_AP_param(Om,Om_fid)
         
        
     
@@ -406,7 +414,7 @@ def lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,fiducial, inter
         return -0.5*chi2
 
 
-def lnprob(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,fiducial, Grid,binning=False,TableNkmu=None, window=True,dataQ=None,withBisp=False,masktriangle=None,Bispdata=None):
+def lnprob(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid, Grid,binning=False,TableNkmu=None, window=True,dataQ=None,withBisp=False,masktriangle=None,Bispdata=None):
    
     """ Computes the log of the probability (logprior + loglike)
     Inputs
@@ -434,7 +442,7 @@ def lnprob(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,fiducial, Grid,
     if np.isfinite(lp) == False :
         dummy  =  -np.inf
         
-    dummy  =  lp + lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,fiducial, Grid,binning=binning,TableNkmu=TableNkmu, window=window,dataQ=dataQ,withBisp=withBisp,masktriangle=masktriangle,Bispdata=Bispdata)
+    dummy  =  lp + lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid, Grid,binning=binning,TableNkmu=TableNkmu, window=window,dataQ=dataQ,withBisp=withBisp,masktriangle=masktriangle,Bispdata=Bispdata)
 
     return dummy
 
@@ -447,15 +455,7 @@ def lnprob(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,fiducial, Grid,
 
 if __name__ ==  "__main__":
 
-    # Table of cosmological parameters according to seems
-
-    dfcosmo = pd.read_csv(opa.join(INPATH,'DataFrameCosmosims.csv'),index_col=0)
-    simtype = "LightConeHector"
     
-    
-    
-    # Load the row that we are interested in
-    series_cosmo = dfcosmo.loc[simtype]
     
     
     
@@ -465,9 +465,8 @@ if __name__ ==  "__main__":
     Om_fid  =  series_cosmo.loc['Omega_m']
     lnAs_fid = series_cosmo.loc['lnAs']
     h_fid  =  series_cosmo.loc['h']
-    z_pk = 0.57#series_cosmo.loc['z_pk']
-    
-    fiducial = [lnAs_fid,Om_fid,h_fid]
+    z_pk = series_cosmo.loc['z_pk']
+   
 
     #### Choice for the data #####
     #For lightcone simulations, need to specify north or south for now (later, merge the two but I'm missing the covariance for SGC
@@ -596,7 +595,7 @@ if __name__ ==  "__main__":
     #################################
 
         
-        chi2  =  lambda theta: -2 * lnlike(theta,xdata, ydata, Cinv, free_para, fix_para,bounds,fiducial, interpolation_grid,binning=binning,window=window,withBisp=withBisp,dataQ=dataQ,TableNkmu=TableNkmu,Bispdata=Bispdata,masktriangle=masktriangle)
+        chi2  =  lambda theta: -2 * lnlike(theta,xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid, interpolation_grid,binning=binning,window=window,withBisp=withBisp,dataQ=dataQ,TableNkmu=TableNkmu,Bispdata=Bispdata,masktriangle=masktriangle)
     
 
         result  =  op.minimize(chi2, all_true,method = 'SLSQP',bounds = bounds,options = {'maxiter':100})
@@ -654,7 +653,7 @@ if __name__ ==  "__main__":
             if accepted:
                 initialpos.append(trialfiducial)
         pos.append(initialpos)
-        sampler.append(emcee.EnsembleSampler(nwalkers, ndim, lnprob,a = 1.15, args = (xdata, ydata, Cinv, free_para, fix_para,bounds,fiducial, interpolation_grid),kwargs={'binning':binning,'window':window,'withBisp':withBisp,'dataQ':dataQ,'masktriangle':masktriangle,'TableNkmu':TableNkmu,'Bispdata':Bispdata},threads = 1))
+        sampler.append(emcee.EnsembleSampler(nwalkers, ndim, lnprob,a = 1.15, args = (xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid, interpolation_grid),kwargs={'binning':binning,'window':window,'withBisp':withBisp,'dataQ':dataQ,'masktriangle':masktriangle,'TableNkmu':TableNkmu,'Bispdata':Bispdata},threads = 1))
         
     np.save(opa.join(OUTPATH,"inipos%sbox_%skmax_%s")%(runtype,boxnumber,kmax),np.array(pos))
     # Start MCMC
@@ -688,8 +687,9 @@ if __name__ ==  "__main__":
             #print("len chain  =  ", chainsamples.shape)
             withinchainvar[jj]  =  np.var(chainsamples, axis = 0)
             meanchain[jj]  =  np.mean(chainsamples, axis = 0)
-            samplesJG.append(chainsamples)
             np.save(opa.join(OUTPATH,"ChainsMidway/samplerchainmid%sbox_%skmax_%srun_%s")%(runtype,boxnumber,kmax,jj),sampler[jj].chain[:20,::10,:])
+            np.save(opa.join(OUTPATH,"ChainsMidway/lnlikechainmid%sbox_%skmax_%srun_%s")%(runtype,boxnumber,kmax,jj),sampler[jj].lnprobability[:20,::10])
+
         scalereduction  =  gelman_rubin_convergence(withinchainvar, meanchain, itercounter/2, Nchains, ndim)
         print("scalereduction  =  ", scalereduction)
         
