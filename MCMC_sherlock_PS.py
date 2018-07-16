@@ -38,7 +38,7 @@ import WindowFFTlog
 
 # Data paths
 INPATH = opa.abspath(opa.join(THIS_PATH,'input'))
-INPATH2 = opa.abspath('/scratch/users/kokron/')
+#INPATH2 = opa.abspath('/scratch/users/kokron/')
 OUTPATH = opa.abspath(opa.join(THIS_PATH,'output')) 
 
 withBisp = False
@@ -80,7 +80,7 @@ def get_grid(gridname,nbinsAs=100,nbins = 50,withBisp=False):
         The min,max values for the three parameters as well as the interpolation for the linear and loop power spectra
     """
     
-    thetatab = np.load(opa.abspath(opa.join(INPATH2,'GridsEFT/Tablecoord%s.npy'%gridname)))
+    thetatab = np.load(opa.abspath(opa.join(INPATH,'GridsEFT/Tablecoord%s.npy'%gridname)))
 
     theta3D = thetatab.reshape((nbinsAs,nbins,nbins,3))
 
@@ -96,9 +96,9 @@ def get_grid(gridname,nbinsAs=100,nbins = 50,withBisp=False):
     hmin = htab.min()
     hmax = htab.max()
 
-    TablePlin = np.load(opa.abspath(opa.join(INPATH2,'GridsEFT/TablePlin%s.npy'%gridname)))
-    TablePloop = np.load(opa.abspath(opa.join(INPATH2,'GridsEFT/TablePloop%s.npy'%gridname)))
-    Tablesigsq = np.load(opa.abspath(opa.join(INPATH2,'GridsEFT/Tablesigsq%s.npy'%gridname)))
+    TablePlin = np.load(opa.abspath(opa.join(INPATH,'GridsEFT/TablePlin%s.npy'%gridname)))
+    TablePloop = np.load(opa.abspath(opa.join(INPATH,'GridsEFT/TablePloop%s.npy'%gridname)))
+    Tablesigsq = np.load(opa.abspath(opa.join(INPATH,'GridsEFT/Tablesigsq%s.npy'%gridname)))
 
     Plininterp = scipy.interpolate.RegularGridInterpolator((lnAstab,Omtab,htab),TablePlin.reshape((nbinsAs,nbins,nbins,TablePlin.shape[-2],TablePlin.shape[-1])))
     Ploopinterp = scipy.interpolate.RegularGridInterpolator((lnAstab,Omtab,htab),TablePloop.reshape((nbinsAs,nbins,nbins,TablePloop.shape[-2],TablePloop.shape[-1])))
@@ -106,7 +106,7 @@ def get_grid(gridname,nbinsAs=100,nbins = 50,withBisp=False):
     
     interpolations = [Plininterp,Ploopinterp,Sigsqinterp]
     if withBisp:
-        TableBisp = np.load(opa.abspath(opa.join(INPATH2,'GridsEFT/TableBisp%s.npy'%gridname)))
+        TableBisp = np.load(opa.abspath(opa.join(INPATH,'GridsEFT/TableBisp%s.npy'%gridname)))
         Bispinterp = scipy.interpolate.RegularGridInterpolator((lnAstab,Omtab,htab),TableBisp.reshape((nbinsAs,nbins,nbins,TableBisp.shape[-2],TableBisp.shape[-1])))
         interpolations = [Plininterp,Ploopinterp,Sigsqinterp,Bispinterp]
         
