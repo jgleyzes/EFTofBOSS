@@ -493,6 +493,8 @@ if __name__ ==  "__main__":
 
     if ZONE != '':    
         dataQ = np.loadtxt(opa.join(INPATH,'Window_functions/dataQ_%s.txt'%ZONE)).T 
+    elif 'ChallengeQuarter' in simtype:
+        dataQ = np.loadtxt(opa.join(INPATH,'Window_functions/dataQ_ChallengeQuarter.dat')).T
     
     Full_Cov = np.loadtxt(opa.join(INPATH,'Covariance/Cov%s%sdata.dat'%(simtype,ZONE)))
     
@@ -514,7 +516,7 @@ if __name__ ==  "__main__":
     
     
 
-    lnAsmin,lnAsmax,Ommin,Ommax,hmin,hmax,interpolation_grid = get_grid(gridname,nbinsAs=115,withBisp=withBisp)    
+    lnAsmin,lnAsmax,Ommin,Ommax,hmin,hmax,interpolation_grid = get_grid(gridname,nbinsAs=100,withBisp=withBisp)    
     print("got grid!")    
 ##############################
 ###  Priors ###################
@@ -555,7 +557,8 @@ if __name__ ==  "__main__":
     kmaxname = ['kmax%s'%kmax for kmax in kmaxtab]
 
     for boxnumber in [boxnumber]:
-
+	if 'ChallengeQuarter' in simtype:
+		simtype = simtype[:-1]
         kPS,PSdata,_ = np.loadtxt(opa.join(INPATH,'DataSims/ps1D_%s%s_%s.dat'%(simtype,ZONE,boxnumber))).T
 
         for indexk,kmax in enumerate(kmaxtab):    
@@ -584,24 +587,12 @@ if __name__ ==  "__main__":
             
             # if free_para is false read the value in fix_para
             fix_para  =  all_true
-            # create an array of free parameters
-            counter  =  0
-            for i in range(nparam):
-                if free_para[i]  ==  True:
-                    counter +=  1
 
-            ndim  =  counter
+            ndim  =  sum(free_para)
             
-            free_true = []
-            free_name = []
-            free_ml  =  np.arange(counter,dtype = np.float)
+            free_true = all_true[free_para]
+            free_name = all_name[free_para]
 
-            counter  =  0;
-            for i in range(nparam):
-                if free_para[i]  ==  True:
-                    free_true.append(all_true[i])
-                    free_name.append(all_name[i])
-                    counter +=  1
 
 
     #################################
@@ -638,7 +629,7 @@ if __name__ ==  "__main__":
  
 
     Nchains  =  4
-    nwalkers  =  2*nparam
+    nwalkers  =  4*nparam
     fidpos = np.concatenate([ [ lnAs_fid,   Om_fid,   h_fid],  free_ml[3:]])
 
 
@@ -668,7 +659,7 @@ if __name__ ==  "__main__":
             if accepted:
                 initialpos.append(trialfiducial)
         pos.append(initialpos)
-        sampler.append(emcee.EnsembleSampler(nwalkers, ndim, lnprob,a = .9, args = (xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid),kwargs={'binning':binning,'window':window,'withBisp':withBisp,'dataQ':dataQ,'masktriangle':masktriangle,'TableNkmu':TableNkmu,'Bispdata':Bispdata},threads = 4))
+        sampler.append(emcee.EnsembleSampler(nwalkers, ndim, lnprob,a = 1.15, args = (xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid),kwargs={'binning':binning,'window':window,'withBisp':withBisp,'dataQ':dataQ,'masktriangle':masktriangle,'TableNkmu':TableNkmu,'Bispdata':Bispdata},threads = 4))
         
     np.save(opa.join(OUTPATH,"inipos%sbox_%skmax_%s")%(runtype,boxnumber,kmax),np.array(pos))
     # Start MCMC
