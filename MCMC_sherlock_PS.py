@@ -47,6 +47,35 @@ withBisp = False
 ###########################################
 
 
+#####################################################################################################################################################
+################## Sound horizon at decoupling #######################
+###
+### Option 'withPlanck' added (l.433) in lnlike: setup it up at l.518.
+###
+################################################### - Pierre, 10/08/18
+#####################################################################################################################################################
+# speed of light [km/s]
+c = 299792.458 
+# omega_gamma = Omega_gamma h^2: normalized physical photon density today (T_cmb = 2.7255 (CLASS))
+og = 2.47282e-5
+#Nur: Number of ultra-relativistic species (CLASS):
+Nur = 3.046 
+# omega_radiation
+orad = (1.+ Nur*7./8.*(4./11.)**(4./3.))*og
+# Baryon-photon decoupling redshift (PLANCK 2015 TT,TE,EE+lowP+lensing (Table 4)):
+zd = 1059.62
+sigma_zd = 0.31 # rd(zd+sigma)-dr(zd-sigma) < 0.2 sigma_rd: we take zd to be a delta function
+# Sound horizon at decoupling [Mpc] (PLANCK 2015 TT,TE,EE+lowP+lensing (Table 4)):
+rd = 147.41
+sigma_rd = 0.30
+
+def rs(Om,h,f_fid):
+    om = Om*h**2
+    ob = om * f_fid/(f_fid+1.) # f_fid: fiducial ratio omega_b/omega_c
+    R = 0.75 * ob/og
+    return 2.*c/100./np.sqrt(3.*R*om) * np.log( ( np.sqrt(1.+zd+R) + np.sqrt((1.+zd)*R*orad/om+R) ) / np.sqrt(1.+zd) / (1.+np.sqrt(R*orad/om)) ) ;
+#####################################################################################################################################################
+
 def Hubble(Om,z):
     return ((Om)*(1+z)**3.+(1-Om))**0.5
 
@@ -241,7 +270,7 @@ def lnprior(theta, free_para, fix_para,bounds):
      return -np.inf
 
 
-def lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid, binning=False,TableNkmu=None, window=True,dataQ=None,withBisp=False,masktriangle=None,Bispdata=None):
+def lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid, f_fid,binning=False,TableNkmu=None, window=True,dataQ=None,withBisp=False,masktriangle=None,Bispdata=None,withPlanck=False):
     
     """ Computes the log of the likelihood
     Inputs
@@ -401,11 +430,13 @@ def lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid, binning
             else:
                     chi2 = chi2_original
 
+        if withPlanck:
+            return -0.5* ( chi2 + (rd-rs(Om,h,f_fid))**2/sigma_rd**2 )
+        else:
+        	return -0.5* chi2
 
-        return -0.5*chi2
 
-
-def lnprob(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid,binning=False,TableNkmu=None, window=True,dataQ=None,withBisp=False,masktriangle=None,Bispdata=None):
+def lnprob(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid,f_fid,binning=False,TableNkmu=None, window=True,dataQ=None,withBisp=False,masktriangle=None,Bispdata=None,withPlanck=False):
    
     """ Computes the log of the probability (logprior + loglike)
     Inputs
@@ -433,7 +464,7 @@ def lnprob(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid,binning=
     if np.isfinite(lp) == False :
         dummy  =  -np.inf
         
-    dummy  =  lp + lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid, binning=binning,TableNkmu=TableNkmu, window=window,dataQ=dataQ,withBisp=withBisp,masktriangle=masktriangle,Bispdata=Bispdata)
+    dummy  =  lp + lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid, f_fid,binning=binning,TableNkmu=TableNkmu, window=window,dataQ=dataQ,withBisp=withBisp,masktriangle=masktriangle,Bispdata=Bispdata,withPlanck=withPlanck)
 
     return dummy
 
@@ -478,6 +509,13 @@ if __name__ ==  "__main__":
     h_fid  =  series_cosmo.loc['h']
     #z_pk = 0.57
     z_pk = series_cosmo.loc['z_pk']
+    
+
+    ob_fid = series_cosmo.loc['omega_b']
+    # ratio omega_b/omega_c
+    f_fid = ob_fid / (Om_fid*h_fid**2 - ob_fid)
+
+    withPlanck = True
 
     
 
@@ -600,7 +638,7 @@ if __name__ ==  "__main__":
     #################################
 
         t0 = time.time()    
-        chi2  =  lambda theta: -2 * lnlike(theta,xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid,binning=binning,window=window,withBisp=withBisp,dataQ=dataQ,TableNkmu=TableNkmu,Bispdata=Bispdata,masktriangle=masktriangle)
+        chi2  =  lambda theta: -2 * lnlike(theta,xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid,f_fid,binning=binning,window=window,withBisp=withBisp,dataQ=dataQ,TableNkmu=TableNkmu,Bispdata=Bispdata,masktriangle=masktriangle,withPlanck=withPlanck)
         print("computed minimum!", time.time() - t0)
         sys.stdout.flush() 
 
@@ -659,7 +697,7 @@ if __name__ ==  "__main__":
             if accepted:
                 initialpos.append(trialfiducial)
         pos.append(initialpos)
-        sampler.append(emcee.EnsembleSampler(nwalkers, ndim, lnprob,a = 1.15, args = (xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid),kwargs={'binning':binning,'window':window,'withBisp':withBisp,'dataQ':dataQ,'masktriangle':masktriangle,'TableNkmu':TableNkmu,'Bispdata':Bispdata},threads = 4))
+        sampler.append(emcee.EnsembleSampler(nwalkers, ndim, lnprob,a = 1.15, args = (xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid,f_fid),kwargs={'binning':binning,'window':window,'withBisp':withBisp,'dataQ':dataQ,'masktriangle':masktriangle,'TableNkmu':TableNkmu,'Bispdata':Bispdata,'withPlanck':withPlanck},threads = 4))
         
     np.save(opa.join(OUTPATH,"inipos%sbox_%skmax_%s")%(runtype,boxnumber,kmax),np.array(pos))
     # Start MCMC
