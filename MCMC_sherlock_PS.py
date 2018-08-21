@@ -41,7 +41,6 @@ INPATH = opa.abspath(opa.join(THIS_PATH,'input'))
 #INPATH2 = opa.abspath('/scratch/users/kokron/')
 OUTPATH = opa.abspath(opa.join(THIS_PATH,'output')) 
 
-withBisp = False
 ###########################################
 ###  Functions  ###########################
 ###########################################
@@ -379,7 +378,7 @@ def lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid, f_fid,b
         
             TermsBisp = Bispinterp((lnAs,Om,h))
             bval = np.array([1.,b1,b2,b4,b1*b11,b1**2,b1*b2,b1*b4,b1**3,b1**2*b2,b1**2*b4,b8**2])
-            Bisp = 1./(4*np.pi)*np.dot(bval,TermsBisp[3:])
+            Bisp = 1.*np.dot(bval,TermsBisp[3:])
         
             modelX = np.concatenate([modelX,Bisp[masktriangle]])
             ydata = np.concatenate([ydata,Bispdata[masktriangle]])
@@ -488,7 +487,7 @@ if __name__ ==  "__main__":
     defaultgrid = sys.argv[4]
 
     if defaultgrid == 1:
-	gridname = series_cosmo.log['gridname']	 
+        gridname = series_cosmo.log['gridname']	 
     else:
 	try:
 	    sys.argv[5]
@@ -509,47 +508,58 @@ if __name__ ==  "__main__":
     h_fid  =  series_cosmo.loc['h']
     #z_pk = 0.57
     z_pk = series_cosmo.loc['z_pk']
+
     
 
     ob_fid = series_cosmo.loc['omega_b']
     # ratio omega_b/omega_c
     f_fid = ob_fid / (Om_fid*h_fid**2 - ob_fid)
 
-    withPlanck = True
+    withPlanck = False 
+
+
 
     
+    withBisp = False 
+ 
 
     #### Choice for the data #####
     #For lightcone simulations, need to specify north or south for now (later, merge the two but I'm missing the covariance for SGC
+    #Change this back when not doing Challenge boxes
     ZONE = 'NGC'
-    
-
+    if "Challenge" in simtype:
+        ZONE = ''
+    if "Hector" not in simtype:
+        withBisp = False
 
     kmin = 0.01
     kminbisp = kmin
-    kmaxbisp = 0.05
+    
+    kmaxbisp = float(sys.argv[6])
 
     if ZONE != '':    
         dataQ = np.loadtxt(opa.join(INPATH,'Window_functions/dataQ_%s.txt'%ZONE)).T 
     elif 'ChallengeQuarter' in simtype:
         dataQ = np.loadtxt(opa.join(INPATH,'Window_functions/dataQ_ChallengeQuarter.dat')).T
-    
-    Full_Cov = np.loadtxt(opa.join(INPATH,'Covariance/Cov%s%sdata.dat'%(simtype,ZONE)))
+    if 'Challenge' in simtype:
+        Full_Cov = np.loadtxt(opa.join(INPATH,'Covariance/Cov%s%s.dat'%(simtype,ZONE)))
+    else: 
+        Full_Cov = np.loadtxt(opa.join(INPATH,'Covariance/Cov%s%sdata.dat'%(simtype,ZONE)))
     
     print("here")    
     #bra
     runtype = simtype+ZONE
     
-    
+    Bispdata = [] 
+    masktriangle = []
     if withBisp:
         runtype += 'withBispkmax%s'%kmaxbisp
-        Full_Cov = np.loadtxt(opa.join(INPATH,'Covariance/Cov%s%s_Bisp.dat'%(simtype,ZONE)))
-        
-        
-    Q1,Q2,Q3,Bispdata = np.loadtxt(opa.join(INPATH,'DataSims/Bispred_LightConeHector_%s_%s.dat'%(ZONE,boxnumber))).T
+        Full_Cov = np.loadtxt(opa.join(INPATH,'Covariance/Cov%s%s_Bisp.dat'%(simtype,ZONE)))   
+        Q1,Q2,Q3,Bispdata = np.loadtxt(opa.join(INPATH,'DataSims/Bispred_LightConeHector_%s_%s.dat'%(ZONE,boxnumber))).T
+        masktriangle = (Q1>=kminbisp)&(Q1<=kmaxbisp)&(Q1<=Q2+Q3)&(Q1>=abs(Q2-Q3))&(Q2>=kminbisp)&(Q2<=kmaxbisp)&(Q3>=kminbisp)&(Q3<=kmaxbisp)
+    #print(masktriangle.shape)
     window = True
     binning = False
-    masktriangle = (Q1>=kminbisp)&(Q1<=kmaxbisp)&(Q1<=Q2+Q3)&(Q1>=abs(Q2-Q3))&(Q2>=kminbisp)&(Q2<=kmaxbisp)&(Q3>=kminbisp)&(Q3<=kmaxbisp)
     TableNkmu = None
     
     
@@ -577,8 +587,8 @@ if __name__ ==  "__main__":
 
     ##### Initial guess for the b_i #####
     inipos = np.array([1.85 ,  -2.62623719,  -0.39661384,   4.21514113,
-         8.36786486, -29.68630616,   1.03528956, -32.39092667,
-        40.00717862,   4.61905778,   100])
+         8.36786486, -29.68630616,   1.03528956, 0,
+        40.00717862,  0,   100])
 
     ##### Guess for the \sigma, to help with the initial position of walkers #####
     onesigma = np.array([  2.48736140e-01,   4.40317511e-02,   2.65820186e-02,
@@ -596,18 +606,18 @@ if __name__ ==  "__main__":
 
     for boxnumber in [boxnumber]:
 	if 'ChallengeQuarter' in simtype:
-		simtype = simtype[:-1]
+		simtype = simtype[:-2]
         kPS,PSdata,_ = np.loadtxt(opa.join(INPATH,'DataSims/ps1D_%s%s_%s.dat'%(simtype,ZONE,boxnumber))).T
 
         for indexk,kmax in enumerate(kmaxtab):    
 
             xdata = kPS[(kPS<kmax)&(kPS>kmin)]
             ydata = PSdata[(kPS<kmax)&(kPS>kmin)]
-            indexkred =  np.argwhere((kPS<kmax)&(kPS>kmin))[:,0]
+            indexkred = np.argwhere((kPS<kmax)&(kPS>kmin))[:,0]
             if withBisp:
                 indextriangle = np.argwhere(masktriangle)[:,0]+kPS.shape[0]
                 indexkred = np.concatenate([indexkred,indextriangle])
-             
+            print("triangle length is", np.argwhere(masktriangle)[:,0].shape)        
             Covred = Full_Cov[indexkred[:,None],indexkred]
 
             Cinv = np.linalg.inv(Covred)
@@ -651,7 +661,7 @@ if __name__ ==  "__main__":
         minchi2  =  result["fun"]
         
         print(free_ml)
-        
+        print("ap params", get_AP_param(free_ml[1], Om_fid))
         if type(masktriangle) == type(None):
             dof = len(xdata) - ndim
         else:
@@ -674,10 +684,10 @@ if __name__ ==  "__main__":
     # Start MCMC
     t0 = time.time()
     temperature  =  1.
-    minlength  =  1000
+    minlength  =  4000
     ichaincheck  =  50
     ithin  =  1
-    epsilon  =  0.06
+    epsilon  =  0.03
     # Set up the sampler.
     pos = []
     sampler = []
@@ -713,6 +723,14 @@ if __name__ ==  "__main__":
     chainstep  =  minlength
     loopcriteria  =  1
     t1 = time.time()
+    for jj in range(0, Nchains):
+        try:
+            progress = np.load(opa.join(OUTPATH,"ChainsMidway/samplerchainmid%sbox_%skmax_%srun_%s")%(runtype,boxnumber,kmax,jj))
+            print("found old chains!, size is ", progress.shape)
+            sampler[jj].chain = progress
+        except:
+            pass
+
     while loopcriteria:
         
         itercounter  =  itercounter + chainstep
@@ -740,7 +758,7 @@ if __name__ ==  "__main__":
             np.save(opa.join(OUTPATH,"ChainsMidway/samplerchainmid%sbox_%skmax_%srun_%s")%(runtype,boxnumber,kmax,jj),sampler[jj].chain[:,::10,:]) 
             np.save(opa.join(OUTPATH,"ChainsMidway/lnlikechainmid%sbox_%skmax_%srun_%s")%(runtype,boxnumber,kmax,jj),sampler[jj].lnprobability[:20,::10])
         print(time.time() - t1)
-	sys.stdout.flush()
+#	sys.stdout.flush()
 	scalereduction  =  gelman_rubin_convergence(withinchainvar, meanchain, itercounter/2, Nchains, ndim)
         print("scalereduction  =  ", scalereduction)
         sys.stdout.flush() 
