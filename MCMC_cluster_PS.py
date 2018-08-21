@@ -7,7 +7,10 @@
 from __future__ import print_function
 
 import os
-os.environ["TMPDIR"] = "/tmp"
+import mpi4py
+mpi4py.rc.initialize = False
+mpi4py.rc.finalize = False
+#os.environ["TMPDIR"] = "/tmp"
 import emcee
 import numpy as np
 import scipy.stats
@@ -18,7 +21,8 @@ import os.path as opa
 import time
 from scipy import stats
 import sys
-
+print("imported")
+sys.stdout.flush()
 ###########################################
 ###  Globals ##############################
 ###########################################
@@ -33,20 +37,11 @@ import APpowerspectraNkmu
 import WindowFFTlog
 
 # Data paths
-INPATH = opa.abspath(opa.join(THIS_PATH,'input')) 
+INPATH = opa.abspath(opa.join(THIS_PATH,'input'))
+INPATH2 = opa.abspath('/scratch/users/kokron/')
 OUTPATH = opa.abspath(opa.join(THIS_PATH,'output')) 
-# Table of cosmological parameters according to seems
 
-dfcosmo = pd.read_csv(opa.join(INPATH,'DataFrameCosmosims.csv'),index_col=0)
-simtype = "LightConeHector"
-    
-    
-    
-    # Load the row that we are interested in
-series_cosmo = dfcosmo.loc[simtype]
-
-gridname = series_cosmo.loc['gridname']#
-withBisp = True
+withBisp = False
 ###########################################
 ###  Functions  ###########################
 ###########################################
@@ -85,7 +80,7 @@ def get_grid(gridname,nbinsAs=100,nbins = 50,withBisp=False):
         The min,max values for the three parameters as well as the interpolation for the linear and loop power spectra
     """
     
-    thetatab = np.load(opa.abspath(opa.join(INPATH,'GridsEFT/Tablecoord%s.npy'%gridname)))
+    thetatab = np.load(opa.abspath(opa.join(INPATH2,'GridsEFT/Tablecoord%s.npy'%gridname)))
 
     theta3D = thetatab.reshape((nbinsAs,nbins,nbins,3))
 
@@ -101,9 +96,9 @@ def get_grid(gridname,nbinsAs=100,nbins = 50,withBisp=False):
     hmin = htab.min()
     hmax = htab.max()
 
-    TablePlin = np.load(opa.abspath(opa.join(INPATH,'GridsEFT/TablePlin%s.npy'%gridname)))
-    TablePloop = np.load(opa.abspath(opa.join(INPATH,'GridsEFT/TablePloop%s.npy'%gridname)))
-    Tablesigsq = np.load(opa.abspath(opa.join(INPATH,'GridsEFT/Tablesigsq%s.npy'%gridname)))
+    TablePlin = np.load(opa.abspath(opa.join(INPATH2,'GridsEFT/TablePlin%s.npy'%gridname)))
+    TablePloop = np.load(opa.abspath(opa.join(INPATH2,'GridsEFT/TablePloop%s.npy'%gridname)))
+    Tablesigsq = np.load(opa.abspath(opa.join(INPATH2,'GridsEFT/Tablesigsq%s.npy'%gridname)))
 
     Plininterp = scipy.interpolate.RegularGridInterpolator((lnAstab,Omtab,htab),TablePlin.reshape((nbinsAs,nbins,nbins,TablePlin.shape[-2],TablePlin.shape[-1])))
     Ploopinterp = scipy.interpolate.RegularGridInterpolator((lnAstab,Omtab,htab),TablePloop.reshape((nbinsAs,nbins,nbins,TablePloop.shape[-2],TablePloop.shape[-1])))
@@ -111,13 +106,11 @@ def get_grid(gridname,nbinsAs=100,nbins = 50,withBisp=False):
     
     interpolations = [Plininterp,Ploopinterp,Sigsqinterp]
     if withBisp:
-        TableBisp = np.load(opa.abspath(opa.join(INPATH,'GridsEFT/TableBisp%s.npy'%gridname)))
+        TableBisp = np.load(opa.abspath(opa.join(INPATH2,'GridsEFT/TableBisp%s.npy'%gridname)))
         Bispinterp = scipy.interpolate.RegularGridInterpolator((lnAstab,Omtab,htab),TableBisp.reshape((nbinsAs,nbins,nbins,TableBisp.shape[-2],TableBisp.shape[-1])))
         interpolations = [Plininterp,Ploopinterp,Sigsqinterp,Bispinterp]
         
     return lnAsmin,lnAsmax,Ommin,Ommax,hmin,hmax,interpolations
-    
-lnAsmin,lnAsmax,Ommin,Ommax,hmin,hmax,interpolation_grid = get_grid(gridname,withBisp=withBisp)    
     
 def computePS(cvals,datalin,dataloop,setkin,setkout,sigsq=0):
     
@@ -248,7 +241,7 @@ def lnprior(theta, free_para, fix_para,bounds):
      return -np.inf
 
 
-def lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid, interpolation_grid,binning=False,TableNkmu=None, window=True,dataQ=None,withBisp=False,masktriangle=None,Bispdata=None):
+def lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid, binning=False,TableNkmu=None, window=True,dataQ=None,withBisp=False,masktriangle=None,Bispdata=None):
     
     """ Computes the log of the likelihood
     Inputs
@@ -339,7 +332,7 @@ def lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid, interpo
                 #This ensures that at high k, the extrapolation is of the for b(k/k_high)^c x exp(-a(k-khigh)/khigh), where a is positive and damps the power spectrum
                 
                 damp = True
-                
+                            
                 Pmodelfinal = WindowFFTlog.transformQ(np.concatenate(PmodelAP),np.concatenate([kfull,kfull,kfull]),xdata,dataQ,kr=kr,damp=damp,
                                                         extrap=True,k_junc_low=k_junc_low,k_junc_high=k_junc_high,ktr=ktr,sig=sig,a=2)
         else:
@@ -367,10 +360,10 @@ def lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid, interpo
         diff  =  (modelX - ydata)
         step1 = np.dot(Cinv,diff)
         chi2 = np.dot(diff,step1)
-        
         if np.isnan(chi2) or chi2>1000:
-            
+
             modelX_original = np.concatenate(scipy.interpolate.interp1d(kfull,PmodelAP,axis=-1)(xdata[:len(xdata)/3]))#np.concatenate(APpowerspectraNkmu.changetoAPnobinning(Pmodel_original,kfull,xdata,qperp,qpar))
+ 
             if withBisp:
                 modelX_original = np.concatenate([modelX_original,Bisp[masktriangle]])
             diff_original  =  (modelX_original - ydata)
@@ -378,7 +371,6 @@ def lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid, interpo
             chi2_original = np.dot(diff_original,step1_original)
 
             if chi2_original<200:
-                
                 
                 ntry = 0
                 nmax = 5
@@ -396,25 +388,24 @@ def lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid, interpo
                     step1 = np.dot(Cinv,diff)
                     chi2 = np.dot(diff,step1)
                     ntry += 1
-                print(k_junc_high,ntry)
+                #print(k_junc_high,ntry)
 
                 if np.isnan(chi2):
-                    
+
                     chi2 = chi2_original
-                    print('chi2nan = ' + str(chi2))  
-                    print('theta = ')
-                    print(theta)
-                    print(time.time()-t0)
-                    print('ntry = '+ str(ntry))  
+                    #print('chi2nan = ' + str(chi2))  
+                    #print('theta = ')
+                    #print(theta)
+                    #print(time.time()-t0)
+                    #print('ntry = '+ str(ntry))  
             else:
                     chi2 = chi2_original
 
-                 
-         
+
         return -0.5*chi2
 
 
-def lnprob(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid, Grid,binning=False,TableNkmu=None, window=True,dataQ=None,withBisp=False,masktriangle=None,Bispdata=None):
+def lnprob(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid,binning=False,TableNkmu=None, window=True,dataQ=None,withBisp=False,masktriangle=None,Bispdata=None):
    
     """ Computes the log of the probability (logprior + loglike)
     Inputs
@@ -442,7 +433,7 @@ def lnprob(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid, Grid,bi
     if np.isfinite(lp) == False :
         dummy  =  -np.inf
         
-    dummy  =  lp + lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid, Grid,binning=binning,TableNkmu=TableNkmu, window=window,dataQ=dataQ,withBisp=withBisp,masktriangle=masktriangle,Bispdata=Bispdata)
+    dummy  =  lp + lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid, binning=binning,TableNkmu=TableNkmu, window=window,dataQ=dataQ,withBisp=withBisp,masktriangle=masktriangle,Bispdata=Bispdata)
 
     return dummy
 
@@ -455,26 +446,49 @@ def lnprob(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid, Grid,bi
 
 if __name__ ==  "__main__":
 
-    
-    
-    
-    
-    
+    # Table of cosmological parameters according to seems
+    print("started")
+    dfcosmo = pd.read_csv(opa.join(INPATH,'DataFrameCosmosims.csv'),index_col=0)
+    boxnumber = sys.argv[1]
+    KMAX = float(sys.argv[2])
+    #simtype = "LightConeDida"
+    simtype = sys.argv[3]
 
+    defaultgrid = int(sys.argv[4])
+    #print("defaultgrid var is", defaultgrid)
+    series_cosmo = dfcosmo.loc[simtype]
+    #print(defaultgrid == 1)
+    
+    if defaultgrid == 1:
+	gridname = series_cosmo.loc['gridname']
+	#print(gridname, "is the gridname")	 
+    else:
+	try:
+	    sys.argv[5]
+	except:
+	    raise Exception("You asked for a non-default grid but didn't give its name as an argument!")
+	gridname = sys.argv[5] 
+    
+    # Load the row that we are interested in
+    
+    # gridname = series_cosmo.loc['gridname']#
+    
+    
+    
     # COSMOLOGICAL GLOBALS: fiducial model (should match input sim data!)
     Om_fid  =  series_cosmo.loc['Omega_m']
     lnAs_fid = series_cosmo.loc['lnAs']
     h_fid  =  series_cosmo.loc['h']
+    #z_pk = 0.57
     z_pk = series_cosmo.loc['z_pk']
-   
+
+    
 
     #### Choice for the data #####
     #For lightcone simulations, need to specify north or south for now (later, merge the two but I'm missing the covariance for SGC
     ZONE = 'NGC'
     
 
-    boxnumber = sys.argv[1]
-    KMAX = float(sys.argv[2])
 
     kmin = 0.01
     kminbisp = kmin
@@ -485,7 +499,7 @@ if __name__ ==  "__main__":
     
     Full_Cov = np.loadtxt(opa.join(INPATH,'Covariance/Cov%s%sdata.dat'%(simtype,ZONE)))
     
-    
+    print("here")    
     
     runtype = simtype+ZONE
     
@@ -503,6 +517,9 @@ if __name__ ==  "__main__":
     
     
 
+    lnAsmin,lnAsmax,Ommin,Ommax,hmin,hmax,interpolation_grid = get_grid(gridname,nbinsAs=115,withBisp=withBisp)    
+    print("got grid!")    
+    
 ##############################
 ###  Priors ###################
 #############################
@@ -538,6 +555,7 @@ if __name__ ==  "__main__":
     kmaxtab = [KMAX]
 
     print("Starting process")
+    sys.stdout.flush()
     kmaxname = ['kmax%s'%kmax for kmax in kmaxtab]
 
     for boxnumber in [boxnumber]:
@@ -594,9 +612,10 @@ if __name__ ==  "__main__":
     ## Find maximum likelihood ######
     #################################
 
-        
-        chi2  =  lambda theta: -2 * lnlike(theta,xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid, interpolation_grid,binning=binning,window=window,withBisp=withBisp,dataQ=dataQ,TableNkmu=TableNkmu,Bispdata=Bispdata,masktriangle=masktriangle)
-    
+        t0 = time.time()    
+        chi2  =  lambda theta: -2 * lnlike(theta,xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid,binning=binning,window=window,withBisp=withBisp,dataQ=dataQ,TableNkmu=TableNkmu,Bispdata=Bispdata,masktriangle=masktriangle)
+        print("computed minimum!", time.time() - t0)
+        sys.stdout.flush() 
 
         result  =  op.minimize(chi2, all_true,method = 'SLSQP',bounds = bounds,options = {'maxiter':100})
 
@@ -605,14 +624,14 @@ if __name__ ==  "__main__":
         free_ml = all_ml[free_para]
 
         minchi2  =  result["fun"]
-        print('minchi2 = ' + str(minchi2))
+        
         print(free_ml)
         
         if type(masktriangle) == type(None):
             dof = len(xdata) - ndim
         else:
             dof = len(xdata) + sum(masktriangle) - ndim
-    
+        print('minchi2 = ' + str(minchi2), dof)
         np.savetxt(opa.join(OUTPATH,"minchi2%sbox_%skmax_%s.txt")%(runtype,boxnumber,kmax),np.concatenate([free_ml,[minchi2,dof]]))
     
     ###################################
@@ -630,7 +649,7 @@ if __name__ ==  "__main__":
     # Start MCMC
     t0 = time.time()
     temperature  =  1.
-    minlength  =  4000
+    minlength  =  1000
     ichaincheck  =  50
     ithin  =  1
     epsilon  =  0.06
@@ -653,7 +672,7 @@ if __name__ ==  "__main__":
             if accepted:
                 initialpos.append(trialfiducial)
         pos.append(initialpos)
-        sampler.append(emcee.EnsembleSampler(nwalkers, ndim, lnprob,a = 1.15, args = (xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid, interpolation_grid),kwargs={'binning':binning,'window':window,'withBisp':withBisp,'dataQ':dataQ,'masktriangle':masktriangle,'TableNkmu':TableNkmu,'Bispdata':Bispdata},threads = 1))
+        sampler.append(emcee.EnsembleSampler(nwalkers, ndim, lnprob,a = .9, args = (xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid),kwargs={'binning':binning,'window':window,'withBisp':withBisp,'dataQ':dataQ,'masktriangle':masktriangle,'TableNkmu':TableNkmu,'Bispdata':Bispdata},threads = 4))
         
     np.save(opa.join(OUTPATH,"inipos%sbox_%skmax_%s")%(runtype,boxnumber,kmax),np.array(pos))
     # Start MCMC
@@ -664,10 +683,11 @@ if __name__ ==  "__main__":
     scalereduction  =  np.arange(ndim,dtype = np.float)
     for jj in range(0, ndim):
         scalereduction[jj]  =  2.
-
+    sys.stdout.flush()
     itercounter  =  0
     chainstep  =  minlength
     loopcriteria  =  1
+    t1 = time.time()
     while loopcriteria:
         
         itercounter  =  itercounter + chainstep
@@ -676,23 +696,29 @@ if __name__ ==  "__main__":
         for jj in range(0, Nchains):
             # Since we write the chain to a file we could put storechain = False, but in that case
             # the function sampler.get_autocorr_time() below will give an error
-            for result in sampler[jj].sample(pos[jj], iterations = chainstep, rstate0 = rstate, storechain = True, thin = ithin):
+            c = 0
+	    for result in sampler[jj].sample(pos[jj], iterations = chainstep, rstate0 = rstate, storechain = True, thin = ithin):
                 pos[jj]  =  result[0]
                 chainchi2  =  -2.*result[1]
                 rstate  =  result[2]
-    
+         #       if c%10==0:
+		    #print(time.time() - t0, c)
+	#	c+=1
+	    t0 = time.time()
     
             # we do the convergence test on the second half of the current chain (itercounter/2)
             chainsamples  =  sampler[jj].chain[:, itercounter/2:, :].reshape((-1, ndim))
             #print("len chain  =  ", chainsamples.shape)
             withinchainvar[jj]  =  np.var(chainsamples, axis = 0)
             meanchain[jj]  =  np.mean(chainsamples, axis = 0)
-            np.save(opa.join(OUTPATH,"ChainsMidway/samplerchainmid%sbox_%skmax_%srun_%s")%(runtype,boxnumber,kmax,jj),sampler[jj].chain[:20,::10,:])
+            samplesJG.append(chainsamples)
+            np.save(opa.join(OUTPATH,"ChainsMidway/samplerchainmid%sbox_%skmax_%srun_%s")%(runtype,boxnumber,kmax,jj),sampler[jj].chain[:,::10,:]) 
             np.save(opa.join(OUTPATH,"ChainsMidway/lnlikechainmid%sbox_%skmax_%srun_%s")%(runtype,boxnumber,kmax,jj),sampler[jj].lnprobability[:20,::10])
-
-        scalereduction  =  gelman_rubin_convergence(withinchainvar, meanchain, itercounter/2, Nchains, ndim)
+        print(time.time() - t1)
+	sys.stdout.flush()
+	scalereduction  =  gelman_rubin_convergence(withinchainvar, meanchain, itercounter/2, Nchains, ndim)
         print("scalereduction  =  ", scalereduction)
-        
+        sys.stdout.flush() 
         loopcriteria  =  0
         for jj in range(0, ndim):
             if np.absolute(1-scalereduction[jj]) > epsilon:
