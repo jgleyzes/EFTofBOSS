@@ -706,9 +706,9 @@ if __name__ ==  "__main__":
     ## Setting up the fit ###########
     #################################    
     
-            all_true  =  np.concatenate(([lnAs_fid, Om_fid, h_fid],inipos))
+            all_true  =  np.concatenate(([lnAs_fid, Om_fid, h_fid],[1.9]+10*[0]))
             all_name  =  np.concatenate(([r'$A_s$',r'$\Omega_m$',r'$h$'],[r'$b_%s$'%i for i in range(len(inipos))]))
-            free_para  =  [True,True,True,True,True,True,True,True,True,True,False,True,False,withBisp]
+            free_para  =  [True,True,True,True,True,False,True,False,False,False,False,False,False,withBisp]
             
             nparam = len(free_para)
             
