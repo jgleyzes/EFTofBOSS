@@ -90,10 +90,11 @@ def get_Pi_for_marg(Ploop,b1):
     return Pi
     
 
-def get_Covbi_for_marg(Pi_data,Cinv):
+def get_Covbi_for_marg(Pi_data,Cinv,sigma=200):
 
-    Covbi = np.dot(Pi_data,np.dot(Cinv,Pi_data.T))
+    Covbi = np.dot(Pi_data,np.dot(Cinv,Pi_data.T))+ 1./sigma**2*np.identity(Pi_data.shape[0])
     return Covbi
+    
     
 
 def apply_WF_bi(Pi_data_AP,setkin,setkout,dataQ,kr=0.5,damp=True,extrap=True,k_junc_low=0.01,k_junc_high=0.2,ktr=100,sig=0.5,a=2,dlnx=0.1):
