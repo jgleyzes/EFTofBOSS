@@ -321,9 +321,14 @@ def lnlike(theta,  kpred,chi2data,Cinvwdata,Cinvww, free_para, fix_para,bounds,O
 
         
         t0 = time.time()
+        
+        # If marginalization, no variation over b3,b4,b5,b6,b7,b8,b9,b10,b11. 
+        if marg_gaussian:
+            free_para = np.array(free_para)
+            free_para[[5,7,8,9,10,11,12,13]] = np.array([False]*8)
+            fix_para[[5,7,8,9,10,11,12,13]] = np.array([0]*8)
         lnAs,Om,h,b1,b2,b3,b4,b5,b6,b7,b8,b9,b10,b11 = match_para(theta, free_para, fix_para)
-        if marg_gaussian and free_para !=[True,True,True,True,True,False,True,False,False,False,False,False,False,False]:
-            raise Exception('If you do the gaussian marginalization you need to set all the bi expect b1,b2 and b4 to False in free_para')
+        
             
     # Import the power spectra interpolators on the grid
 
@@ -355,7 +360,7 @@ def lnlike(theta,  kpred,chi2data,Cinvwdata,Cinvww, free_para, fix_para,bounds,O
         if not binning:
             PmodelAP = APpowerspectraNkmu.changetoAPnobinning(Pmodel,kfull,kfull,qperp,qpar)
             if marg_gaussian:
-                Pi_AP = np.array([APpowerspectraNkmu.changetoAPnobinning(P,kfull,kfull,qperp,qpar) for P in Pi_or])
+                Pi_AP = APpowerspectraNkmu.changetoAPnobinningPi(Pi_or,kfull,kfull,qperp,qpar)
 
         else:
             if type(TableNkmu) == type(None):
@@ -363,7 +368,7 @@ def lnlike(theta,  kpred,chi2data,Cinvwdata,Cinvww, free_para, fix_para,bounds,O
             else : 
                 PmodelAP = APpowerspectraNkmu.changetoAPbinning(Pmodel,kfull,kfull,qperp,qpar,TableNkmu)
                 if marg_gaussian:
-                    Pi_AP = np.array([APpowerspectraNkmu.changetoAPbinning(P,kfull,kfull,qperp,qpar,TableNkmu) for P in Pi_or])
+                    Pi_AP = APpowerspectraNkmu.changetoAPbinningPi(Pi_or,kfull,kfull,qperp,qpar,TableNkmu)
         
         
         Pmodel_extrap = scipy.interpolate.interp1d(kfull,PmodelAP,axis=-1,bounds_error=False,fill_value='extrapolate')(kpred)
@@ -372,7 +377,7 @@ def lnlike(theta,  kpred,chi2data,Cinvwdata,Cinvww, free_para, fix_para,bounds,O
             Pi_extrap = (scipy.interpolate.interp1d(kfull,Pi_AP,axis=-1,bounds_error=False,fill_value='extrapolate')(kpred)).reshape((Pi_AP.shape[0],-1))
             Covbi = get_Covbi_for_marg(Pi_extrap,Cinvww,sigma=200)
             Cinvbi = np.linalg.inv(Covbi)
-            vectorbi = np.dot(Cinvwdata,Pi_extrap.T)
+            vectorbi = np.dot(modelX,np.dot(Cinvww,Pi_extrap.T))-np.dot(Cinvwdata,Pi_extrap.T)
             chi2nomar = np.dot(modelX,np.dot(Cinvww,modelX))-2*np.dot(Cinvwdata,modelX)+chi2data
             chi2mar = -np.dot(vectorbi,np.dot(Cinvbi,vectorbi))+np.log(np.linalg.det(Covbi))
             chi2 = chi2mar + chi2nomar
