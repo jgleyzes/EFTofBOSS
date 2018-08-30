@@ -322,7 +322,7 @@ def lnlike(theta,  kpred,chi2data,Cinvwdata,Cinvww, free_para, fix_para,bounds,O
         
         t0 = time.time()
         
-        # If marginalization, no variation over b3,b4,b5,b6,b7,b8,b9,b10,b11. 
+        # If marginalization, no variation over b3,b5,b6,b7,b8,b9,b10,b11. 
         if marg_gaussian:
             free_para = np.array(free_para)
             free_para[[5,7,8,9,10,11,12,13]] = np.array([False]*8)
@@ -518,7 +518,7 @@ if __name__ ==  "__main__":
     window = True
     binning = False
     TableNkmu = None
-    marg_gaussian = False
+    marg_gaussian = True
     
     
     
@@ -673,7 +673,7 @@ if __name__ ==  "__main__":
             if accepted:
                 initialpos.append(trialfiducial)
         pos.append(initialpos)
-        sampler.append(emcee.EnsembleSampler(nwalkers, ndim, lnprob,a = 1.15, ( kpred,chi2data,Cinvwdata,Cinvww, free_para, fix_para,bounds,Om_fid),kwargs={'binning':binning,'marg_gaussian':marg_gaussian,'TableNkmu':TableNkmu},threads = 4))
+        sampler.append(emcee.EnsembleSampler(nwalkers, ndim, lnprob,a = 1.15,args = ( kpred,chi2data,Cinvwdata,Cinvww, free_para, fix_para,bounds,Om_fid),kwargs={'binning':binning,'marg_gaussian':marg_gaussian,'TableNkmu':TableNkmu},threads = 4))
         
     np.save(opa.join(OUTPATH,"inipos%sbox_%skmax_%s")%(runtype,boxnumber,kmax),np.array(pos))
     # Start MCMC
