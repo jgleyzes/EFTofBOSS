@@ -38,13 +38,77 @@ import WindowFFTlog
 
 # Data paths
 INPATH = opa.abspath(opa.join(THIS_PATH,'input'))
-INPATH2 = opa.abspath('/scratch/users/kokron/')
+#INPATH2 = opa.abspath('/scratch/users/kokron/')
 OUTPATH = opa.abspath(opa.join(THIS_PATH,'output')) 
 
-withBisp = False
 ###########################################
 ###  Functions  ###########################
 ###########################################
+
+
+#####################################################################################################################################################
+################## Sound horizon at decoupling #######################
+###
+### Option 'withPlanck' added (l.433) in lnlike: setup it up at l.518.
+###
+################################################### - Pierre, 10/08/18
+#####################################################################################################################################################
+# speed of light [km/s]
+c = 299792.458 
+# omega_gamma = Omega_gamma h^2: normalized physical photon density today (T_cmb = 2.7255 (CLASS))
+og = 2.47282e-5
+#Nur: Number of ultra-relativistic species (CLASS):
+Nur = 3.046 
+# omega_radiation
+orad = (1.+ Nur*7./8.*(4./11.)**(4./3.))*og
+# Baryon-photon decoupling redshift (PLANCK 2015 TT,TE,EE+lowP+lensing (Table 4)):
+zd = 1059.62
+sigma_zd = 0.31 # rd(zd+sigma)-dr(zd-sigma) < 0.2 sigma_rd: we take zd to be a delta function
+# Sound horizon at decoupling [Mpc] (PLANCK 2015 TT,TE,EE+lowP+lensing (Table 4)):
+rd = 147.41
+sigma_rd = 0.30
+
+def rs(Om,h,f_fid):
+    om = Om*h**2
+    ob = om * f_fid/(f_fid+1.) # f_fid: fiducial ratio omega_b/omega_c
+    R = 0.75 * ob/og
+    return 2.*c/100./np.sqrt(3.*R*om) * np.log( ( np.sqrt(1.+zd+R) + np.sqrt((1.+zd)*R*orad/om+R) ) / np.sqrt(1.+zd) / (1.+np.sqrt(R*orad/om)) ) ;
+#####################################################################################################################################################
+
+
+def get_Pi_for_marg(Ploop,b1):
+    Pi = np.array([Ploop[:,3,:]+b1*Ploop[:,7,:],
+             Ploop[:,15,:]+b1*Ploop[:,12,:],
+             Ploop[:,16,:]+b1*Ploop[:,13,:],
+             Ploop[:,17,:]+b1*Ploop[:,14,:],
+             Ploop[:,18,:],
+             Ploop[:,19,:],
+             Ploop[:,20,:]])
+    
+    
+    
+    return Pi
+    
+
+def get_Covbi_for_marg(Pi_data,Cinv,sigma=200):
+
+    Covbi = np.dot(Pi_data,np.dot(Cinv,Pi_data.T))+ 1./sigma**2*np.identity(Pi_data.shape[0])
+    return Covbi
+    
+    
+
+def apply_WF_bi(Pi_data_AP,setkin,setkout,dataQ,kr=0.5,damp=True,extrap=True,k_junc_low=0.01,k_junc_high=0.2,ktr=100,sig=0.5,a=2,dlnx=0.1):
+    
+    if check_if_multipoles_k_array(setkin):
+        setkin = setkin[:len(setkin)/3]
+    
+    Pi_data_final_nob8 = np.array([WindowFFTlog.transformQ(np.concatenate(PAP),setkin,setkout,dataQ,kr=kr,damp=damp,
+                                                        extrap=extrap,k_junc_low=k_junc_low,k_junc_high=k_junc_high,ktr=ktr,sig=sig,a=a,dlnx=dlnx,BBKSlow=False,nmax=10) for PAP in Pi_data_AP[:-3]])
+    Pi_data_final_nob8 = Pi_data_final_nob8.reshape((4,-1))
+    
+    Pi_data_final_b8 = scipy.interpolate.interp1d(setkin,Pi_data_AP[-3:],axis=-1)(setkout[:len(setkout)/3]).reshape((3,-1))
+    Pi_data_final = np.concatenate([Pi_data_final_nob8,Pi_data_final_b8])
+    return Pi_data_final
 
 
 def Hubble(Om,z):
@@ -80,7 +144,7 @@ def get_grid(gridname,nbinsAs=100,nbins = 50,withBisp=False):
         The min,max values for the three parameters as well as the interpolation for the linear and loop power spectra
     """
     
-    thetatab = np.load(opa.abspath(opa.join(INPATH2,'GridsEFT/Tablecoord%s.npy'%gridname)))
+    thetatab = np.load(opa.abspath(opa.join(INPATH,'GridsEFT/Tablecoord%s.npy'%gridname)))
 
     theta3D = thetatab.reshape((nbinsAs,nbins,nbins,3))
 
@@ -96,9 +160,9 @@ def get_grid(gridname,nbinsAs=100,nbins = 50,withBisp=False):
     hmin = htab.min()
     hmax = htab.max()
 
-    TablePlin = np.load(opa.abspath(opa.join(INPATH2,'GridsEFT/TablePlin%s.npy'%gridname)))
-    TablePloop = np.load(opa.abspath(opa.join(INPATH2,'GridsEFT/TablePloop%s.npy'%gridname)))
-    Tablesigsq = np.load(opa.abspath(opa.join(INPATH2,'GridsEFT/Tablesigsq%s.npy'%gridname)))
+    TablePlin = np.load(opa.abspath(opa.join(INPATH,'GridsEFT/TablePlin%s.npy'%gridname)))
+    TablePloop = np.load(opa.abspath(opa.join(INPATH,'GridsEFT/TablePloop%s.npy'%gridname)))
+    Tablesigsq = np.load(opa.abspath(opa.join(INPATH,'GridsEFT/Tablesigsq%s.npy'%gridname)))
 
     Plininterp = scipy.interpolate.RegularGridInterpolator((lnAstab,Omtab,htab),TablePlin.reshape((nbinsAs,nbins,nbins,TablePlin.shape[-2],TablePlin.shape[-1])))
     Ploopinterp = scipy.interpolate.RegularGridInterpolator((lnAstab,Omtab,htab),TablePloop.reshape((nbinsAs,nbins,nbins,TablePloop.shape[-2],TablePloop.shape[-1])))
@@ -106,7 +170,7 @@ def get_grid(gridname,nbinsAs=100,nbins = 50,withBisp=False):
     
     interpolations = [Plininterp,Ploopinterp,Sigsqinterp]
     if withBisp:
-        TableBisp = np.load(opa.abspath(opa.join(INPATH2,'GridsEFT/TableBisp%s.npy'%gridname)))
+        TableBisp = np.load(opa.abspath(opa.join(INPATH,'GridsEFT/TableBisp%s.npy'%gridname)))
         Bispinterp = scipy.interpolate.RegularGridInterpolator((lnAstab,Omtab,htab),TableBisp.reshape((nbinsAs,nbins,nbins,TableBisp.shape[-2],TableBisp.shape[-1])))
         interpolations = [Plininterp,Ploopinterp,Sigsqinterp,Bispinterp]
         
@@ -241,7 +305,7 @@ def lnprior(theta, free_para, fix_para,bounds):
      return -np.inf
 
 
-def lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid, binning=False,TableNkmu=None, window=True,dataQ=None,withBisp=False,masktriangle=None,Bispdata=None):
+def lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid, f_fid,marg_gaussian=False,binning=False,TableNkmu=None, window=True,dataQ=None,withBisp=False,masktriangle=None,Bispdata=None,withPlanck=False):
     
     """ Computes the log of the likelihood
     Inputs
@@ -304,14 +368,19 @@ def lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid, binning
         #The AP parameters
         qperp,qpar = get_AP_param(Om,Om_fid)
         
-       
+        if marg_gaussian:
+            Pi_data_or = get_Pi_for_marg(Ploop,b1)
     
         if not binning:
             PmodelAP = APpowerspectraNkmu.changetoAPnobinning(Pmodel,kfull,kfull,qperp,qpar)
+            Pi_data_AP = np.array([APpowerspectraNkmu.changetoAPnobinning(P,kfull,kfull,qperp,qpar) for P in Pi_data_or])
         else:
             if type(TableNkmu) == type(None):
                 raise Exception('You want to account for binning but forgot to provide a TableNkmu (array of shape (3,n)) obtained from the sims/ Can be found in input/TableNkmu')
-            else : PmodelAP = APpowerspectraNkmu.changetoAPbinning(Pmodel,kfull,kfull,qperp,qpar,TableNkmu)
+            else : 
+                PmodelAP = APpowerspectraNkmu.changetoAPbinning(Pmodel,kfull,kfull,qperp,qpar,TableNkmu)
+                Pi_data_AP = np.array([APpowerspectraNkmu.changetoAPbinning(P,kfull,kfull,qperp,qpar,TableNkmu) for P in Pi_data_or])
+            
     
     
         if window:
@@ -335,9 +404,14 @@ def lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid, binning
                             
                 Pmodelfinal = WindowFFTlog.transformQ(np.concatenate(PmodelAP),np.concatenate([kfull,kfull,kfull]),xdata,dataQ,kr=kr,damp=damp,
                                                         extrap=True,k_junc_low=k_junc_low,k_junc_high=k_junc_high,ktr=ktr,sig=sig,a=2)
+                if marg_gaussian:
+                    Pi_data_final = apply_WF_bi(Pi_data_AP,np.concatenate([kfull,kfull,kfull]),xdata,dataQ,kr=kr,damp=damp,
+                                                        extrap=True,k_junc_low=1.1*k_junc_low,k_junc_high=k_junc_high,ktr=ktr,sig=sig,a=10,dlnx=0.1)
         else:
             Pmodelfinal = APpowerspectraNkmu.changetoAPnobinning(PmodelAP,kfull,xdata,1,1) #This is just to interpolate the power spectrum on xdata
-    
+            if marg_gaussian:
+                Pi_data_final = np.array([APpowerspectraNkmu.changetoAPnobinning(PAP,kfull,xdata,1,1) for PAP in Pi_data_AP])
+                Pi_data_final = Pi_data_final.reshape((Pi_data_final.shape[0],-1))
         
         
         modelX = np.concatenate(Pmodelfinal)
@@ -350,16 +424,29 @@ def lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid, binning
         
             TermsBisp = Bispinterp((lnAs,Om,h))
             bval = np.array([1.,b1,b2,b4,b1*b11,b1**2,b1*b2,b1*b4,b1**3,b1**2*b2,b1**2*b4,b8**2])
-            Bisp = 1./(4*np.pi)*np.dot(bval,TermsBisp[3:])
+            Bisp = 1.*np.dot(bval,TermsBisp[3:])
         
             modelX = np.concatenate([modelX,Bisp[masktriangle]])
             ydata = np.concatenate([ydata,Bispdata[masktriangle]])
         
-    
+        
+        
+        
     
         diff  =  (modelX - ydata)
         step1 = np.dot(Cinv,diff)
         chi2 = np.dot(diff,step1)
+        
+        
+        if marg_gaussian:
+            Covbi = get_Covbi_for_marg(Pi_data_final,Cinv)
+            Cinvbi = np.linalg.inv(Covbi)
+            vectorbi = np.dot(Pi_data_final,step1)
+            
+            chi2mar = -np.dot(vectorbi,np.dot(Cinvbi,vectorbi))+np.log(np.linalg.det(Covbi))
+            
+            chi2 = chi2 + chi2mar
+        
         if np.isnan(chi2) or chi2>1000:
 
             modelX_original = np.concatenate(scipy.interpolate.interp1d(kfull,PmodelAP,axis=-1)(xdata[:len(xdata)/3]))#np.concatenate(APpowerspectraNkmu.changetoAPnobinning(Pmodel_original,kfull,xdata,qperp,qpar))
@@ -369,6 +456,16 @@ def lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid, binning
             diff_original  =  (modelX_original - ydata)
             step1_original = np.dot(Cinv,diff_original)
             chi2_original = np.dot(diff_original,step1_original)
+            
+            if marg_gaussian:
+                Pi_data_original = scipy.interpolate.interp1d(kfull,Pi_data_AP,axis=-1)(xdata[:len(xdata)/3]).reshape((Pi_data_AP.shape[0],-1))
+                Covbior = get_Covbi_for_marg(Pi_data_original,Cinv)
+                Cinvbior = np.linalg.inv(Covbior)
+                
+                vectorbior = np.dot(Pi_data_original,step1_original)  
+                    
+                        
+                chi2_original = np.dot(diff_original,step1_original) - np.dot(vectorbior,np.dot(Cinvbior,vectorbior))+np.log(np.linalg.det(Covbior))
 
             if chi2_original<200:
                 
@@ -388,6 +485,17 @@ def lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid, binning
                     step1 = np.dot(Cinv,diff)
                     chi2 = np.dot(diff,step1)
                     ntry += 1
+                    if marg_gaussian:
+                        Pi_data_final = apply_WF_bi(Pi_data_AP,np.concatenate([kfull,kfull,kfull]),xdata,dataQ,kr=kr,damp=damp,
+                                                        extrap=True,k_junc_low=1.1*k_junc_low,k_junc_high=k_junc_high,ktr=ktr,sig=sig,a=10,dlnx=0.1)
+                        Covbi = get_Covbi_for_marg(Pi_data_final,Cinv)
+                        Cinvbi = np.linalg.inv(Covbi)
+                        vectorbi = np.dot(Pi_data_final,step1)
+                        chi2mar = -np.dot(vectorbi,np.dot(Cinvbi,vectorbi))+np.log(np.linalg.det(Covbi))
+                        chi2nomar = np.dot(diff,step1)
+                    
+                        chi2 = chi2mar+chi2nomar
+                        
                 #print(k_junc_high,ntry)
 
                 if np.isnan(chi2):
@@ -401,11 +509,13 @@ def lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid, binning
             else:
                     chi2 = chi2_original
 
+        if withPlanck:
+            return -0.5* ( chi2 + (rd-rs(Om,h,f_fid))**2/sigma_rd**2 )
+        else:
+        	return -0.5* chi2
 
-        return -0.5*chi2
 
-
-def lnprob(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid,binning=False,TableNkmu=None, window=True,dataQ=None,withBisp=False,masktriangle=None,Bispdata=None):
+def lnprob(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid,f_fid,binning=False,TableNkmu=None, window=True,dataQ=None,withBisp=False,masktriangle=None,Bispdata=None,withPlanck=False):
    
     """ Computes the log of the probability (logprior + loglike)
     Inputs
@@ -433,7 +543,7 @@ def lnprob(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid,binning=
     if np.isfinite(lp) == False :
         dummy  =  -np.inf
         
-    dummy  =  lp + lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid, binning=binning,TableNkmu=TableNkmu, window=window,dataQ=dataQ,withBisp=withBisp,masktriangle=masktriangle,Bispdata=Bispdata)
+    dummy  =  lp + lnlike(theta, xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid, f_fid,binning=binning,TableNkmu=TableNkmu, window=window,dataQ=dataQ,withBisp=withBisp,masktriangle=masktriangle,Bispdata=Bispdata,withPlanck=withPlanck)
 
     return dummy
 
@@ -454,14 +564,11 @@ if __name__ ==  "__main__":
     #simtype = "LightConeDida"
     simtype = sys.argv[3]
 
-    defaultgrid = int(sys.argv[4])
-    #print("defaultgrid var is", defaultgrid)
-    series_cosmo = dfcosmo.loc[simtype]
-    #print(defaultgrid == 1)
+    defaultgrid = sys.argv[4]
     
+    series_cosmo = dfcosmo.loc[simtype]
     if defaultgrid == 1:
-	gridname = series_cosmo.loc['gridname']
-	#print(gridname, "is the gridname")	 
+        gridname = series_cosmo.log['gridname']	 
     else:
 	try:
 	    sys.argv[5]
@@ -471,10 +578,11 @@ if __name__ ==  "__main__":
     
     # Load the row that we are interested in
     
+    
     # gridname = series_cosmo.loc['gridname']#
     
     
-    
+
     # COSMOLOGICAL GLOBALS: fiducial model (should match input sim data!)
     Om_fid  =  series_cosmo.loc['Omega_m']
     lnAs_fid = series_cosmo.loc['lnAs']
@@ -484,42 +592,61 @@ if __name__ ==  "__main__":
 
     
 
+    ob_fid = series_cosmo.loc['omega_b']
+    # ratio omega_b/omega_c
+    f_fid = ob_fid / (Om_fid*h_fid**2 - ob_fid)
+
+    withPlanck = False 
+
+
+    marg_gaussian = False
+    
+    withBisp = False 
+ 
+
     #### Choice for the data #####
     #For lightcone simulations, need to specify north or south for now (later, merge the two but I'm missing the covariance for SGC
+    #Change this back when not doing Challenge boxes
     ZONE = 'NGC'
-    
-
+    if "Challenge" in simtype:
+        ZONE = ''
+    if "Hector" not in simtype:
+        withBisp = False
 
     kmin = 0.01
     kminbisp = kmin
-    kmaxbisp = 0.05
+    
+    kmaxbisp = float(sys.argv[6])
 
     if ZONE != '':    
         dataQ = np.loadtxt(opa.join(INPATH,'Window_functions/dataQ_%s.txt'%ZONE)).T 
-    
-    Full_Cov = np.loadtxt(opa.join(INPATH,'Covariance/Cov%s%sdata.dat'%(simtype,ZONE)))
+    elif 'ChallengeQuarter' in simtype:
+        dataQ = np.loadtxt(opa.join(INPATH,'Window_functions/dataQ_ChallengeQuarter.dat')).T
+    if 'Challenge' in simtype:
+        Full_Cov = np.loadtxt(opa.join(INPATH,'Covariance/Cov%s%s.dat'%(simtype,ZONE)))
+    else: 
+        Full_Cov = np.loadtxt(opa.join(INPATH,'Covariance/Cov%s%sdata.dat'%(simtype,ZONE)))
     
     print("here")    
-    
+    #bra
     runtype = simtype+ZONE
     
-    
+    Bispdata = [] 
+    masktriangle = []
     if withBisp:
         runtype += 'withBispkmax%s'%kmaxbisp
-        Full_Cov = np.loadtxt(opa.join(INPATH,'Covariance/Cov%s%s_Bisp.dat'%(simtype,ZONE)))
-        
-        
-    Q1,Q2,Q3,Bispdata = np.loadtxt(opa.join(INPATH,'DataSims/Bispred_LightConeHector_%s_%s.dat'%(ZONE,boxnumber))).T
+        Full_Cov = np.loadtxt(opa.join(INPATH,'Covariance/Cov%s%s_Bisp.dat'%(simtype,ZONE)))   
+        Q1,Q2,Q3,Bispdata = np.loadtxt(opa.join(INPATH,'DataSims/Bispred_LightConeHector_%s_%s.dat'%(ZONE,boxnumber))).T
+        masktriangle = (Q1>=kminbisp)&(Q1<=kmaxbisp)&(Q1<=Q2+Q3)&(Q1>=abs(Q2-Q3))&(Q2>=kminbisp)&(Q2<=kmaxbisp)&(Q3>=kminbisp)&(Q3<=kmaxbisp)
+    #print(masktriangle.shape)
     window = True
     binning = False
-    masktriangle = (Q1>=kminbisp)&(Q1<=kmaxbisp)&(Q1<=Q2+Q3)&(Q1>=abs(Q2-Q3))&(Q2>=kminbisp)&(Q2<=kmaxbisp)&(Q3>=kminbisp)&(Q3<=kmaxbisp)
     TableNkmu = None
     
     
 
-    lnAsmin,lnAsmax,Ommin,Ommax,hmin,hmax,interpolation_grid = get_grid(gridname,nbinsAs=115,withBisp=withBisp)    
+    lnAsmin,lnAsmax,Ommin,Ommax,hmin,hmax,interpolation_grid = get_grid(gridname,nbinsAs=100,withBisp=withBisp)    
     print("got grid!")    
-    
 ##############################
 ###  Priors ###################
 #############################
@@ -541,8 +668,8 @@ if __name__ ==  "__main__":
 
     ##### Initial guess for the b_i #####
     inipos = np.array([1.85 ,  -2.62623719,  -0.39661384,   4.21514113,
-         8.36786486, -29.68630616,   1.03528956, -32.39092667,
-        40.00717862,   4.61905778,   100])
+         8.36786486, -29.68630616,   1.03528956, 0,
+        40.00717862,  0,   100])
 
     ##### Guess for the \sigma, to help with the initial position of walkers #####
     onesigma = np.array([  2.48736140e-01,   4.40317511e-02,   2.65820186e-02,
@@ -559,18 +686,19 @@ if __name__ ==  "__main__":
     kmaxname = ['kmax%s'%kmax for kmax in kmaxtab]
 
     for boxnumber in [boxnumber]:
-
+	if 'ChallengeQuarter' in simtype:
+		simtype = simtype[:-2]
         kPS,PSdata,_ = np.loadtxt(opa.join(INPATH,'DataSims/ps1D_%s%s_%s.dat'%(simtype,ZONE,boxnumber))).T
 
         for indexk,kmax in enumerate(kmaxtab):    
 
             xdata = kPS[(kPS<kmax)&(kPS>kmin)]
             ydata = PSdata[(kPS<kmax)&(kPS>kmin)]
-            indexkred =  np.argwhere((kPS<kmax)&(kPS>kmin))[:,0]
+            indexkred = np.argwhere((kPS<kmax)&(kPS>kmin))[:,0]
             if withBisp:
                 indextriangle = np.argwhere(masktriangle)[:,0]+kPS.shape[0]
                 indexkred = np.concatenate([indexkred,indextriangle])
-             
+            print("triangle length is", np.argwhere(masktriangle)[:,0].shape)        
             Covred = Full_Cov[indexkred[:,None],indexkred]
 
             Cinv = np.linalg.inv(Covred)
@@ -579,33 +707,21 @@ if __name__ ==  "__main__":
     ## Setting up the fit ###########
     #################################    
     
-            all_true  =  np.concatenate(([lnAs_fid, Om_fid, h_fid],inipos))
+            all_true  =  np.concatenate(([lnAs_fid, Om_fid, h_fid],[1.9]+10*[0]))
             all_name  =  np.concatenate(([r'$A_s$',r'$\Omega_m$',r'$h$'],[r'$b_%s$'%i for i in range(len(inipos))]))
-            free_para  =  [True,True,True,True,True,True,True,True,True,True,False,True,False,withBisp]
+            free_para  =  [True,True,True,True,True,False,True,False,False,False,False,False,False,withBisp]
             
             nparam = len(free_para)
             
             
             # if free_para is false read the value in fix_para
             fix_para  =  all_true
-            # create an array of free parameters
-            counter  =  0
-            for i in range(nparam):
-                if free_para[i]  ==  True:
-                    counter +=  1
 
-            ndim  =  counter
+            ndim  =  sum(free_para)
             
-            free_true = []
-            free_name = []
-            free_ml  =  np.arange(counter,dtype = np.float)
+            free_true = all_true[free_para]
+            free_name = all_name[free_para]
 
-            counter  =  0;
-            for i in range(nparam):
-                if free_para[i]  ==  True:
-                    free_true.append(all_true[i])
-                    free_name.append(all_name[i])
-                    counter +=  1
 
 
     #################################
@@ -613,7 +729,7 @@ if __name__ ==  "__main__":
     #################################
 
         t0 = time.time()    
-        chi2  =  lambda theta: -2 * lnlike(theta,xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid,binning=binning,window=window,withBisp=withBisp,dataQ=dataQ,TableNkmu=TableNkmu,Bispdata=Bispdata,masktriangle=masktriangle)
+        chi2  =  lambda theta: -2 * lnlike(theta,xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid,f_fid,marg_gaussian=marg_gaussian,binning=binning,window=window,withBisp=withBisp,dataQ=dataQ,TableNkmu=TableNkmu,Bispdata=Bispdata,masktriangle=masktriangle,withPlanck=withPlanck)
         print("computed minimum!", time.time() - t0)
         sys.stdout.flush() 
 
@@ -626,7 +742,7 @@ if __name__ ==  "__main__":
         minchi2  =  result["fun"]
         
         print(free_ml)
-        
+        print("ap params", get_AP_param(free_ml[1], Om_fid))
         if type(masktriangle) == type(None):
             dof = len(xdata) - ndim
         else:
@@ -642,17 +758,17 @@ if __name__ ==  "__main__":
  
 
     Nchains  =  4
-    nwalkers  =  2*nparam
+    nwalkers  =  4*nparam
     fidpos = np.concatenate([ [ lnAs_fid,   Om_fid,   h_fid],  free_ml[3:]])
 
 
     # Start MCMC
     t0 = time.time()
     temperature  =  1.
-    minlength  =  1000
+    minlength  =  4000
     ichaincheck  =  50
     ithin  =  1
-    epsilon  =  0.06
+    epsilon  =  0.03
     # Set up the sampler.
     pos = []
     sampler = []
@@ -672,7 +788,7 @@ if __name__ ==  "__main__":
             if accepted:
                 initialpos.append(trialfiducial)
         pos.append(initialpos)
-        sampler.append(emcee.EnsembleSampler(nwalkers, ndim, lnprob,a = .9, args = (xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid),kwargs={'binning':binning,'window':window,'withBisp':withBisp,'dataQ':dataQ,'masktriangle':masktriangle,'TableNkmu':TableNkmu,'Bispdata':Bispdata},threads = 4))
+        sampler.append(emcee.EnsembleSampler(nwalkers, ndim, lnprob,a = 1.15, args = (xdata, ydata, Cinv, free_para, fix_para,bounds,Om_fid,f_fid),kwargs={'marg_gaussian':marg_gaussian,'binning':binning,'window':window,'withBisp':withBisp,'dataQ':dataQ,'masktriangle':masktriangle,'TableNkmu':TableNkmu,'Bispdata':Bispdata,'withPlanck':withPlanck},threads = 4))
         
     np.save(opa.join(OUTPATH,"inipos%sbox_%skmax_%s")%(runtype,boxnumber,kmax),np.array(pos))
     # Start MCMC
@@ -688,6 +804,14 @@ if __name__ ==  "__main__":
     chainstep  =  minlength
     loopcriteria  =  1
     t1 = time.time()
+    for jj in range(0, Nchains):
+        try:
+            progress = np.load(opa.join(OUTPATH,"ChainsMidway/samplerchainmid%sbox_%skmax_%srun_%s")%(runtype,boxnumber,kmax,jj))
+            print("found old chains!, size is ", progress.shape)
+            sampler[jj].chain = progress
+        except:
+            pass
+
     while loopcriteria:
         
         itercounter  =  itercounter + chainstep
@@ -715,7 +839,7 @@ if __name__ ==  "__main__":
             np.save(opa.join(OUTPATH,"ChainsMidway/samplerchainmid%sbox_%skmax_%srun_%s")%(runtype,boxnumber,kmax,jj),sampler[jj].chain[:,::10,:]) 
             np.save(opa.join(OUTPATH,"ChainsMidway/lnlikechainmid%sbox_%skmax_%srun_%s")%(runtype,boxnumber,kmax,jj),sampler[jj].lnprobability[:20,::10])
         print(time.time() - t1)
-	sys.stdout.flush()
+#	sys.stdout.flush()
 	scalereduction  =  gelman_rubin_convergence(withinchainvar, meanchain, itercounter/2, Nchains, ndim)
         print("scalereduction  =  ", scalereduction)
         sys.stdout.flush() 
@@ -757,4 +881,3 @@ if __name__ ==  "__main__":
 
 
     np.savetxt(opa.join(OUTPATH,"mcmcarray%sbox_%skmax_%s.txt")%(runtype,boxnumber,kmax),mcmc_array)
-
