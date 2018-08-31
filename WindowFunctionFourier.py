@@ -99,7 +99,7 @@ def apply_window_PS(setPS,PS,setkout,withmask=True,windowk=0.1):
     return PStransformed
 
 
-def apply_window_covariance(Cinv,setk,withmask=True,windowk=0.1):
+def apply_window_covariance(Cinv,setk,thin=1,withmask=True,windowk=0.1):
     """
     Apply the window function to the inverse covariance by doing a 2 convolutions directly in fourier space, encoded in Qll.
     
@@ -115,6 +115,7 @@ def apply_window_covariance(Cinv,setk,withmask=True,windowk=0.1):
     Cinv: the array of k on which PS is evaluated (ideally, the full array from Pierre's code)
     PS: the multipoles of the PS (non concatenated), shape (3,len(setPS))
     setk: the array of k on which Cinv is evaluated
+    thin: downsampling of kp (to speed up chi2 computations)
     withmask: whether to only do the convolution over a small window around k
     windowk: the size of said window
     
@@ -140,6 +141,8 @@ def apply_window_covariance(Cinv,setk,withmask=True,windowk=0.1):
     setk_or = np.loadtxt(opa.join(INPATH,'Window_functions/kp_LightConeHectorNGC.txt'))  
     setkp_or = np.loadtxt(opa.join(INPATH,'Window_functions/k.dat'))
 
+    Qll = Qll[:,:,::thin,:]
+    setkp_or = setkp_or[::thin]
     
     if withmask:
         kpgrid,kgrid = np.meshgrid(setkp_or,setk_or,indexing='ij')
@@ -161,7 +164,7 @@ def apply_window_covariance(Cinv,setk,withmask=True,windowk=0.1):
     # Put the Qll(k) on the same array as Cinv for the matrix multiplication
     Qll_out = scipy.interpolate.interp1d(setk_or,Qll_weighted_red,axis=-1)(setk)
     
-    nkout = sum(maskred)
+    nkout = len(kpred)
     
     
     # Cinv convoluted once for the P_model Cinv Pdata term
