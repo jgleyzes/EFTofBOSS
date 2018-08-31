@@ -339,7 +339,7 @@ def lnlike(theta,  kpred,chi2data,Cinvwdata,Cinvww, free_para, fix_para,bounds,O
     
         if check_if_multipoles_k_array(kfull):
             kfull = kfull[:len(kfull)/3] 
-        
+        kfullred = kfull[kfull<kpred.max()+0.1]
         Ploop = np.swapaxes(Ploopinterp((lnAs,Om,h)).reshape(3,len(kfull),22),axis1 = 1,axis2 = 2)[:,1:,:]
         Plin = np.swapaxes(Plininterp((lnAs,Om,h)).reshape(3,len(kfull),4),axis1 = 1,axis2 = 2)[:,1:,:]       
         sigsq = float(Sigsqinterp((lnAs,Om,h)))
@@ -358,9 +358,9 @@ def lnlike(theta,  kpred,chi2data,Cinvwdata,Cinvww, free_para, fix_para,bounds,O
             Pi_or = get_Pi_for_marg(Ploop,b1)
     
         if not binning:
-            PmodelAP = APpowerspectraNkmu.changetoAPnobinning(Pmodel,kfull,kfull,qperp,qpar)
+            PmodelAP = APpowerspectraNkmu.changetoAPnobinning(Pmodel,kfull,kfullred,qperp,qpar,nbinsmu=100)
             if marg_gaussian:
-                Pi_AP = APpowerspectraNkmu.changetoAPnobinningPi(Pi_or,kfull,kfull,qperp,qpar)
+                Pi_AP = APpowerspectraNkmu.changetoAPnobinningPi(Pi_or,kfull,kfullred,qperp,qpar,nbinsmu=100)
 
         else:
             if type(TableNkmu) == type(None):
