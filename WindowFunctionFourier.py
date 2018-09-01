@@ -99,7 +99,7 @@ def apply_window_PS(setPS,PS,setkout,withmask=True,windowk=0.1):
     return PStransformed
 
 
-def apply_window_covariance(Cinv,setk,thin=1,withmask=True,windowk=0.1):
+def apply_window_covariance(Cinv,setk,thin=1,withmask=True,windowkplus=0.2,kpmin=4.e-3):
     """
     Apply the window function to the inverse covariance by doing a 2 convolutions directly in fourier space, encoded in Qll.
     
@@ -115,9 +115,9 @@ def apply_window_covariance(Cinv,setk,thin=1,withmask=True,windowk=0.1):
     Cinv: the array of k on which PS is evaluated (ideally, the full array from Pierre's code)
     PS: the multipoles of the PS (non concatenated), shape (3,len(setPS))
     setk: the array of k on which Cinv is evaluated
-    thin: downsampling of kp (to speed up chi2 computations)
-    withmask: whether to only do the convolution over a small window around k
-    windowk: the size of said window
+    withmask: whether to reduce the range of k' to below k + windowkplus
+    windowkplus: the size of said window
+    kpmin: the minimum kp to include
     
     Outputs:
     ------
@@ -146,7 +146,7 @@ def apply_window_covariance(Cinv,setk,thin=1,withmask=True,windowk=0.1):
     
     if withmask:
         kpgrid,kgrid = np.meshgrid(setkp_or,setk_or,indexing='ij')
-        mask = (kpgrid<kgrid+windowk)&(kpgrid>kgrid-windowk)
+        mask = (kpgrid<kgrid+windowkplus)
         Qll = np.einsum('lpkn,kn->lpkn',Qll,mask)
     
     
@@ -154,9 +154,10 @@ def apply_window_covariance(Cinv,setk,thin=1,withmask=True,windowk=0.1):
     deltak = setkp_or[1:] - setkp_or[:-1]
     deltak = np.concatenate([[0],deltak])
     Qll_weighted = np.einsum('lpkn,k->lpkn',Qll,deltak)
+
     
     # Only keep value of setkp_or in the relevant range
-    maskred = ((setkp_or>setk.min()-0.05*windowk)&(setkp_or<setk.max()+windowk))
+    maskred = ((setkp_or>kpmin)&(setkp_or<setk.max()+windowkplus))
     kpred = setkp_or[maskred]
     
     Qll_weighted_red = Qll_weighted[:,:,maskred,:]
