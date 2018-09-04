@@ -370,11 +370,11 @@ def lnlike(theta,  kpred,chi2data,Cinvwdata,Cinvww, free_para, fix_para,bounds,O
                 if marg_gaussian:
                     Pi_AP = APpowerspectraNkmu.changetoAPbinningPi(Pi_or,kfull,kfull,qperp,qpar,TableNkmu)
         
-        
-        Pmodel_extrap = scipy.interpolate.interp1d(kfull,PmodelAP,axis=-1,bounds_error=False,fill_value='extrapolate')(kpred)
+        #print(kfullred.shape, kfull.shape, PmodelAP.shape)
+        Pmodel_extrap = scipy.interpolate.interp1d(kfullred,PmodelAP,axis=-1,bounds_error=False,fill_value='extrapolate')(kpred)
         modelX = Pmodel_extrap.reshape(-1)
         if marg_gaussian:
-            Pi_extrap = (scipy.interpolate.interp1d(kfull,Pi_AP,axis=-1,bounds_error=False,fill_value='extrapolate')(kpred)).reshape((Pi_AP.shape[0],-1))
+            Pi_extrap = (scipy.interpolate.interp1d(kfullred,Pi_AP,axis=-1,bounds_error=False,fill_value='extrapolate')(kpred)).reshape((Pi_AP.shape[0],-1))
             Covbi = get_Covbi_for_marg(Pi_extrap,Cinvww,sigma=200)
             Cinvbi = np.linalg.inv(Covbi)
             vectorbi = np.dot(modelX,np.dot(Cinvww,Pi_extrap.T))-np.dot(Cinvwdata,Pi_extrap.T)
@@ -520,8 +520,6 @@ if __name__ ==  "__main__":
     TableNkmu = None
     marg_gaussian = True
     
-    
-    
 
     lnAsmin,lnAsmax,Ommin,Ommax,hmin,hmax,interpolation_grid = get_grid(gridname,nbinsAs=100,withBisp=withBisp)    
     print("got grid!")    
@@ -610,10 +608,12 @@ if __name__ ==  "__main__":
     #################################
     ## Find maximum likelihood ######
     #################################
-
+        
+        if marg_gaussian:
+            simtype += 'gaussMarg'
         t0 = time.time()    
         chi2  =  lambda theta: -2 * lnlike(theta, kpred,chi2data,Cinvwdata,Cinvww, free_para, fix_para,bounds,Om_fid, binning=binning,marg_gaussian=marg_gaussian,TableNkmu=TableNkmu)
-        
+        print(kpred.shape, chi2data, Cinvww.shape)    
 
         result  =  op.minimize(chi2, all_true,method = 'SLSQP',bounds = bounds,options = {'maxiter':100})
         
@@ -650,7 +650,7 @@ if __name__ ==  "__main__":
     # Start MCMC
     t0 = time.time()
     temperature  =  1.
-    minlength  =  4000
+    minlength  =  1200
     ichaincheck  =  50
     ithin  =  1
     epsilon  =  0.03
@@ -674,7 +674,7 @@ if __name__ ==  "__main__":
                 accepted  =  np.isfinite(lnprior(trialfiducial, free_para, fix_para,bounds))
             if accepted:
                 initialpos.append(trialfiducial)
-            print('found initial pos in ', time.time()-t_try)
+            #print('found initial pos in ', time.time()-t_try)
         pos.append(initialpos)
         sampler.append(emcee.EnsembleSampler(nwalkers, ndim, lnprobloaded,a = 1.15,threads = 1))
     np.save(opa.join(OUTPATH,"inipos%sbox_%skmax_%s")%(runtype,boxnumber,kmax),np.array(pos))
@@ -723,7 +723,7 @@ if __name__ ==  "__main__":
             withinchainvar[jj]  =  np.var(chainsamples, axis = 0)
             meanchain[jj]  =  np.mean(chainsamples, axis = 0)
             samplesJG.append(chainsamples)
-            np.save(opa.join(OUTPATH,"ChainsMidway/samplerchainmid%sbox_%skmax_%srun_%s")%(runtype,boxnumber,kmax,jj),sampler[jj].chain[:,::10,:]) 
+            np.save(opa.join(OUTPATH,"ChainsMidway/samplerchainmid%sbox_%skmax_%srun_%s")%(runtype,boxnumber,kmax,jj),sampler[jj].chain[:,::2,:]) 
             np.save(opa.join(OUTPATH,"ChainsMidway/lnlikechainmid%sbox_%skmax_%srun_%s")%(runtype,boxnumber,kmax,jj),sampler[jj].lnprobability[:20,::10])
         print(time.time() - t1)
 #	sys.stdout.flush()
