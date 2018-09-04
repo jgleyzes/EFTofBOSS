@@ -581,7 +581,7 @@ if __name__ ==  "__main__":
             Covred = Full_Cov[indexkred[:,None],indexkred]
 
             Cinv = np.linalg.inv(Covred)
-            kpred,Cinvw,Cinvww = WindowFunctionFourier.apply_window_covariance(Cinv,xdata)
+            kpred,Cinvw,Cinvww = WindowFunctionFourier.apply_window_covariance(Cinv,xdata,thin=2)
             
             chi2data = np.dot(ydata,np.dot(Cinv,ydata))
             Cinvwdata = np.dot(ydata, Cinvw)     
