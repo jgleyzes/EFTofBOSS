@@ -324,11 +324,12 @@ def lnlike(theta,  kpred,chi2data,Cinvwdata,Cinvww, free_para, fix_para,bounds,O
         
         # If marginalization, no variation over b3,b5,b6,b7,b8,b9,b10,b11. 
         if marg_gaussian:
-            free_para = np.array(free_para)
+            #print(free_para)
+            free_para = np.array(free_para)            
             free_para[[5,7,8,9,10,11,12,13]] = np.array([False]*8)
             fix_para[[5,7,8,9,10,11,12,13]] = np.array([0]*8)
+        #print(match_para(theta, free_para, fix_para))
         lnAs,Om,h,b1,b2,b3,b4,b5,b6,b7,b8,b9,b10,b11 = match_para(theta, free_para, fix_para)
-        
             
     # Import the power spectra interpolators on the grid
 
@@ -375,7 +376,7 @@ def lnlike(theta,  kpred,chi2data,Cinvwdata,Cinvww, free_para, fix_para,bounds,O
         modelX = Pmodel_extrap.reshape(-1)
         if marg_gaussian:
             Pi_extrap = (scipy.interpolate.interp1d(kfullred,Pi_AP,axis=-1,bounds_error=False,fill_value='extrapolate')(kpred)).reshape((Pi_AP.shape[0],-1))
-            Covbi = get_Covbi_for_marg(Pi_extrap,Cinvww,sigma=200)
+            Covbi = get_Covbi_for_marg(Pi_extrap,Cinvww,sigma=100)
             Cinvbi = np.linalg.inv(Covbi)
             vectorbi = np.dot(modelX,np.dot(Cinvww,Pi_extrap.T))-np.dot(Cinvwdata,Pi_extrap.T)
             chi2nomar = np.dot(modelX,np.dot(Cinvww,modelX))-2*np.dot(Cinvwdata,modelX)+chi2data
@@ -489,13 +490,29 @@ if __name__ ==  "__main__":
     kminbisp = kmin
     
     kmaxbisp = float(sys.argv[6])
-
+    #workaround setting of marg_gauss, kmaxbisp = 0.07 is true and kmaxbisp = 0.08 is false
+    if kmaxbisp == 0.07:
+        marg_gaussian = True
+        free_para =  [True,True,True,True,True,False,True,False,False,False,False,False,False,withBisp]
+        a = 1.8
+        print("kmaxbisp is", kmaxbisp, " setting marg_gaussian to ", marg_gaussian)
+    elif kmaxbisp == 0.08:
+        marg_gaussian = False
+        free_para =  [True,True,True,True,True,True,True,True,True,True,False,True,False,withBisp]
+        a = 1.15
+        print("kmaxbisp is", kmaxbisp, " setting marg_gaussian to ", marg_gaussian)
     if ZONE != '':    
         dataQ = np.loadtxt(opa.join(INPATH,'Window_functions/dataQ_%s.txt'%ZONE)).T 
     elif 'ChallengeQuarter' in simtype:
         dataQ = np.loadtxt(opa.join(INPATH,'Window_functions/dataQ_ChallengeQuarter.dat')).T
     if 'Challenge' in simtype:
-        Full_Cov = np.loadtxt(opa.join(INPATH,'Covariance/Cov%s%s.dat'%(simtype,ZONE)))
+        #CHANGE THIS BACK, SETTING FULL COV TO QUARTER
+        if 'Quarter' not in simtype:
+            simtype = 'ChallengeQuarter'+boxnumber
+            print('Using quarter covariance instead of full')
+            Full_Cov = np.loadtxt(opa.join(INPATH,'Covariance/Cov%s%s.dat'%(simtype,ZONE)))
+        else:
+            Full_Cov = np.loadtxt(opa.join(INPATH,'Covariance/Cov%s%s.dat'%(simtype,ZONE)))
     else: 
         Full_Cov = np.loadtxt(opa.join(INPATH,'Covariance/Cov%s%sdata.dat'%(simtype,ZONE)))
     
@@ -518,7 +535,7 @@ if __name__ ==  "__main__":
     window = True
     binning = False
     TableNkmu = None
-    marg_gaussian = True
+    #marg_gaussian = True
     
 
     lnAsmin,lnAsmax,Ommin,Ommax,hmin,hmax,interpolation_grid = get_grid(gridname,nbinsAs=100,withBisp=withBisp)    
@@ -528,8 +545,8 @@ if __name__ ==  "__main__":
 #############################
 
     #### The uniform prior on the b_i#####
-    bmin = -200
-    bmax = 200
+    bmin = -100
+    bmax = 100
 
     # We require b_1>0
     bmintab = [0] +[bmin]*10
@@ -589,11 +606,9 @@ if __name__ ==  "__main__":
     #################################    
     
             all_true  =  np.concatenate(([lnAs_fid, Om_fid, h_fid],[1.9]+10*[0]))
-            all_name  =  np.concatenate(([r'$A_s$',r'$\Omega_m$',r'$h$'],[r'$b_%s$'%i for i in range(len(inipos))]))
-            free_para  =  [True,True,True,True,True,True,True,True,True,True,False,True,False,withBisp]
+            all_name  =  np.concatenate(([r'$A_s$',r'$\Omega_m$',r'$h$'],[r'$b_%s$'%(i+1) for i in range(len(inipos))]))
             
             nparam = len(free_para)
-            
             
             # if free_para is false read the value in fix_para
             fix_para  =  all_true
@@ -604,16 +619,16 @@ if __name__ ==  "__main__":
             free_name = all_name[free_para]
 
 
-
     #################################
     ## Find maximum likelihood ######
     #################################
         
         if marg_gaussian:
-            simtype += 'gaussMarg'
-        t0 = time.time()    
+            runtype += 'gaussMarg'
+        t0 = time.time()
+        print(free_para)    
         chi2  =  lambda theta: -2 * lnlike(theta, kpred,chi2data,Cinvwdata,Cinvww, free_para, fix_para,bounds,Om_fid, binning=binning,marg_gaussian=marg_gaussian,TableNkmu=TableNkmu)
-        print(kpred.shape, chi2data, Cinvww.shape)    
+        #print(kpred.shape, chi2data, Cinvww.shape)    
 
         result  =  op.minimize(chi2, all_true,method = 'SLSQP',bounds = bounds,options = {'maxiter':100})
         
@@ -625,8 +640,8 @@ if __name__ ==  "__main__":
         free_ml = all_ml[free_para]
 
         minchi2  =  result["fun"]
-        
-        print(free_ml)
+         
+        print(result)
         print("ap params", get_AP_param(free_ml[1], Om_fid))
         if type(masktriangle) == type(None):
             dof = len(xdata) - ndim
@@ -641,7 +656,7 @@ if __name__ ==  "__main__":
 
        # Set up the sampler.
  
-
+    bla 
     Nchains  =  4
     nwalkers  =  4*nparam
     fidpos = np.concatenate([ [ lnAs_fid,   Om_fid,   h_fid],  free_ml[3:]])
@@ -650,10 +665,10 @@ if __name__ ==  "__main__":
     # Start MCMC
     t0 = time.time()
     temperature  =  1.
-    minlength  =  1200
+    minlength  =  4000
     ichaincheck  =  50
     ithin  =  1
-    epsilon  =  0.03
+    epsilon  =  0.02
     # Set up the sampler.
     pos = []
     sampler = []
@@ -676,7 +691,7 @@ if __name__ ==  "__main__":
                 initialpos.append(trialfiducial)
             #print('found initial pos in ', time.time()-t_try)
         pos.append(initialpos)
-        sampler.append(emcee.EnsembleSampler(nwalkers, ndim, lnprobloaded,a = 1.15,threads = 1))
+        sampler.append(emcee.EnsembleSampler(nwalkers, ndim, lnprobloaded,a = a,threads = 1))
     np.save(opa.join(OUTPATH,"inipos%sbox_%skmax_%s")%(runtype,boxnumber,kmax),np.array(pos))
     # Start MCMC
     print("Running MCMC...")
