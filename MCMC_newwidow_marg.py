@@ -662,7 +662,9 @@ if __name__ ==  "__main__":
     print("ndim  =  ", ndim)
     print("Nchains  =  ", Nchains)
 
-    lnprobloaded = lambda theta: lnprob(theta, kpred,chi2data,Cinvwdata,Cinvww, free_para, fix_para,bounds,Om_fid,marg_gaussian=marg_gaussian, binning=binning,TableNkmu=TableNkmu)
+    def lnprobloaded(theta):
+	return lnprob(theta, kpred,chi2data,Cinvwdata,Cinvww, free_para, fix_para,bounds,Om_fid,marg_gaussian=marg_gaussian, binning=binning,TableNkmu=TableNkmu)
+    
     for jj in range(0, Nchains):
 
         initialpos = []
