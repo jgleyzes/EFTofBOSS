@@ -656,7 +656,7 @@ if __name__ ==  "__main__":
 
        # Set up the sampler.
  
-    bla 
+    
     Nchains  =  4
     nwalkers  =  4*nparam
     fidpos = np.concatenate([ [ lnAs_fid,   Om_fid,   h_fid],  free_ml[3:]])
