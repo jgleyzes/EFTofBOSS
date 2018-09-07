@@ -476,7 +476,7 @@ if __name__ ==  "__main__":
     
     withBisp = False 
  
-
+    window = True
     #### Choice for the data #####
     #For lightcone simulations, need to specify north or south for now (later, merge the two but I'm missing the covariance for SGC
     #Change this back when not doing Challenge boxes
@@ -508,9 +508,10 @@ if __name__ ==  "__main__":
     if 'Challenge' in simtype:
         #CHANGE THIS BACK, SETTING FULL COV TO QUARTER
         if 'Quarter' not in simtype:
-            simtype = 'ChallengeQuarter'+boxnumber
+            window = False
+            simtype_false = 'ChallengeQuarter'+boxnumber
             print('Using quarter covariance instead of full')
-            Full_Cov = np.loadtxt(opa.join(INPATH,'Covariance/Cov%s%s.dat'%(simtype,ZONE)))
+            Full_Cov = np.loadtxt(opa.join(INPATH,'Covariance/Cov%s%s.dat'%(simtype_false,ZONE)))
         else:
             Full_Cov = np.loadtxt(opa.join(INPATH,'Covariance/Cov%s%s.dat'%(simtype,ZONE)))
     else: 
@@ -532,7 +533,6 @@ if __name__ ==  "__main__":
                                                     
                                                     ####### OPTIONS FOR MCMC #########
     
-    window = True
     binning = False
     TableNkmu = None
     #marg_gaussian = True
@@ -665,7 +665,7 @@ if __name__ ==  "__main__":
     # Start MCMC
     t0 = time.time()
     temperature  =  1.
-    minlength  =  4000
+    minlength  =  6000
     ichaincheck  =  50
     ithin  =  1
     epsilon  =  0.02
@@ -678,7 +678,7 @@ if __name__ ==  "__main__":
     print("Nchains  =  ", Nchains)
 
     def lnprobloaded(theta):
-	return lnprob(theta, kpred,chi2data,Cinvwdata,Cinvww, free_para, fix_para,bounds,Om_fid,marg_gaussian=marg_gaussian, binning=binning,TableNkmu=TableNkmu)
+        return lnprob(theta, kpred,chi2data,Cinvwdata,Cinvww, free_para, fix_para,bounds,Om_fid,marg_gaussian=marg_gaussian, binning=binning,TableNkmu=TableNkmu)
     
     for jj in range(0, Nchains):
 
