@@ -579,9 +579,8 @@ if __name__ ==  "__main__":
     kmaxname = ['kmax%s'%kmax for kmax in kmaxtab]
 
     for boxnumber in [boxnumber]:
-	if 'ChallengeQuarter' in simtype:
-		simtype = simtype[:-1]
-        
+	if 'Challenge' in simtype:
+	    simtype = simtype[:-1]
         kPS,PSdata,_ = np.loadtxt(opa.join(INPATH,'DataSims/ps1D_%s%s_%s.dat'%(simtype,ZONE,boxnumber))).T
         klog = np.loadtxt(opa.join(INPATH,'Window_functions/k.dat'))
         for indexk,kmax in enumerate(kmaxtab):    
@@ -596,7 +595,15 @@ if __name__ ==  "__main__":
             Covred = Full_Cov[indexkred[:,None],indexkred]
 
             Cinv = np.linalg.inv(Covred)
-            kpred,Cinvw,Cinvww = WindowFunctionFourier.apply_window_covariance(Cinv,xdata,thin=2)
+            #Window function shouldn't be applied for full challenge box
+            if 'Challenge' in simtype and 'Quarter' not in simtype:
+                kpred = xdata[:len(xdata)/3]
+                Cinvw = Cinv
+                Cinvww = Cinv
+            elif 'Quarter' in simtype:
+                raise(Exception("Quarter window function not yet implemented! Look at hard-coded path in WindowFunctionFourier.py for more information"))
+            else:
+                kpred,Cinvw,Cinvww = WindowFunctionFourier.apply_window_covariance(Cinv,xdata,thin=2)
             
             chi2data = np.dot(ydata,np.dot(Cinv,ydata))
             Cinvwdata = np.dot(ydata, Cinvw)     
