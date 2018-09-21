@@ -496,7 +496,7 @@ if __name__ ==  "__main__":
         free_para =  [True,True,True,True,True,False,True,False,False,False,False,False,False,withBisp]
         a = 1.8
         print("kmaxbisp is", kmaxbisp, " setting marg_gaussian to ", marg_gaussian)
-    elif kmaxbisp == 0.08:
+    elif kmaxbisp == 0.08 or kmaxbisp == 0.09:
         marg_gaussian = False
         free_para =  [True,True,True,True,True,True,True,True,True,True,False,True,False,withBisp]
         a = 1.15
@@ -629,7 +629,11 @@ if __name__ ==  "__main__":
     #################################
     ## Find maximum likelihood ######
     #################################
-        
+         
+        epsilon  =  0.02
+        if kmaxbisp == 0.09:
+            epsilon = 0.01
+            runtype+= 'smallEps'
         if marg_gaussian:
             runtype += 'gaussMarg'
         t0 = time.time()
@@ -675,7 +679,7 @@ if __name__ ==  "__main__":
     minlength  =  6000
     ichaincheck  =  50
     ithin  =  1
-    epsilon  =  0.02
+        
     # Set up the sampler.
     pos = []
     sampler = []
