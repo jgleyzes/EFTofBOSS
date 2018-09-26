@@ -384,8 +384,12 @@ def lnlike(theta,  kpred,chi2data,Cinvwdata,Cinvww, free_para, fix_para,bounds,O
             chi2 = chi2mar + chi2nomar
         
         else:
-             chi2 = np.dot(modelX,np.dot(Cinvww,modelX))-2*np.dot(Cinvwdata,modelX)+chi2data        
-        return -0.5*chi2
+             chi2 = np.dot(modelX,np.dot(Cinvww,modelX))-2*np.dot(Cinvwdata,modelX)+chi2data       
+ 
+        if withPlanck:
+            return -0.5* ( chi2 + (rd-rs(Om,h,f_fid))**2/sigma_rd**2 )
+        else: 
+            return -0.5*chi2
 
 
 def lnprob(theta, kpred,chi2data,Cinvwdata,Cinvww, free_para, fix_para,bounds,Om_fid, marg_gaussian=False,binning=False,TableNkmu=None):
@@ -437,17 +441,18 @@ if __name__ ==  "__main__":
     #simtype = "LightConeDida"
     simtype = sys.argv[3]
 
-    defaultgrid = sys.argv[4]
+    planckchain = sys.argv[4]
     
     series_cosmo = dfcosmo.loc[simtype]
-    if defaultgrid == 1:
-        gridname = series_cosmo.log['gridname']	 
+    if planckchain == 1:
+        withPlanck = True	 
     else:
-	try:
-	    sys.argv[5]
-	except:
-	    raise Exception("You asked for a non-default grid but didn't give its name as an argument!")
-	gridname = sys.argv[5] 
+        withPlanck = False
+	#try:
+	#    sys.argv[5]
+	# except:
+	#    raise Exception("You asked for a non-default grid but didn't give its name as an argument!")
+	#gridname = sys.argv[5] 
     
     # Load the row that we are interested in
     
@@ -469,7 +474,7 @@ if __name__ ==  "__main__":
     # ratio omega_b/omega_c
     f_fid = ob_fid / (Om_fid*h_fid**2 - ob_fid)
 
-    withPlanck = False 
+    #withPlanck = False 
 
 
     
@@ -480,7 +485,7 @@ if __name__ ==  "__main__":
     #### Choice for the data #####
     #For lightcone simulations, need to specify north or south for now (later, merge the two but I'm missing the covariance for SGC
     #Change this back when not doing Challenge boxes
-    ZONE = 'NGC'
+   # ZONE = 'NGC'
     if "Challenge" in simtype:
         ZONE = ''
     if "Hector" not in simtype:
@@ -631,6 +636,8 @@ if __name__ ==  "__main__":
     #################################
          
         epsilon  =  0.02
+        if withPlanck:
+            runtype+= 'withPlanck'
         if kmaxbisp == 0.09:
             epsilon = 0.01
             runtype+= 'smallEps'
