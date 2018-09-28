@@ -284,8 +284,11 @@ def lnprior(theta, free_para, fix_para,bounds):
     for i in range(len(value_array)):
         withinprior = (withinprior) and (bounds[i][0] <= value_array[i] <= bounds[i][1])
         
-    if withinprior:            
-        return 0.
+    if withinprior:
+        if withPlanck:
+            return -0.5* (rd-rs(Om,h,f_fid))**2/sigma_rd**2 
+        else:            
+            return 0.
     else:
      return -np.inf
 
@@ -388,7 +391,7 @@ def lnlike(theta,  kpred,chi2data,Cinvwdata,Cinvww, free_para, fix_para,bounds,O
  
         if withPlanck:
             #print("Planck contrib is ", (rd-rs(Om,h,f_fid))**2/sigma_rd**2)
-            return -0.5* ( chi2 + (rd-rs(Om,h,f_fid))**2/sigma_rd**2 )
+            return -0.5* ( chi2 )
         else: 
             return -0.5*chi2
 
@@ -760,7 +763,7 @@ if __name__ ==  "__main__":
             withinchainvar[jj]  =  np.var(chainsamples, axis = 0)
             meanchain[jj]  =  np.mean(chainsamples, axis = 0)
             samplesJG.append(chainsamples)
-            np.save(opa.join(OUTPATH,"ChainsMidway/samplerchainmid%sbox_%skmax_%srun_%s")%(runtype,boxnumber,kmax,jj),sampler[jj].chain[:,::2,:]) 
+            np.save(opa.join(OUTPATH,"ChainsMidway/samplerchainmid%sbox_%skmax_%srun_%s")%(runtype,boxnumber,kmax,jj),sampler[jj].chain[:,::10,:]) 
             np.save(opa.join(OUTPATH,"ChainsMidway/lnlikechainmid%sbox_%skmax_%srun_%s")%(runtype,boxnumber,kmax,jj),sampler[jj].lnprobability[:20,::10])
         print(time.time() - t1)
 #	sys.stdout.flush()
@@ -793,7 +796,7 @@ if __name__ ==  "__main__":
     burnin  =  1000
     
     for jj in range(Nchains):
-        np.save(opa.join(OUTPATH,"samplerchain%sbox_%skmax_%srun_%s")%(runtype,boxnumber,kmax,jj),sampler[jj].chain[:,::5,:])
+        np.save(opa.join(OUTPATH,"samplerchain%sbox_%skmax_%srun_%s")%(runtype,boxnumber,kmax,jj),sampler[jj].chain[:,:,:])
         np.save(opa.join(OUTPATH,"lnlikechain%sbox_%skmax_%srun_%s")%(runtype,boxnumber,kmax,jj),sampler[jj].lnprobability[:,::5])
 
 
