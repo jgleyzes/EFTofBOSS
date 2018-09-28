@@ -279,7 +279,8 @@ def lnprior(theta, free_para, fix_para,bounds):
     """
     
     value_array  =  match_para(theta, free_para, fix_para)
-    
+    Om = value_array[1]
+    h = value_array[2]    
     withinprior = True
     for i in range(len(value_array)):
         withinprior = (withinprior) and (bounds[i][0] <= value_array[i] <= bounds[i][1])
