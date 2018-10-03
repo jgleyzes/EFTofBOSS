@@ -54,25 +54,26 @@ OUTPATH = opa.abspath(opa.join(THIS_PATH,'output'))
 ################################################### - Pierre, 10/08/18
 #####################################################################################################################################################
 # speed of light [km/s]
-c = 299792.458 
+C = 299792.458 
 # omega_gamma = Omega_gamma h^2: normalized physical photon density today (T_cmb = 2.7255 (CLASS))
-og = 2.47282e-5
+OG = 2.47282e-5
 #Nur: Number of ultra-relativistic species (CLASS):
-Nur = 3.046 
+NUR = 3.046 
 # omega_radiation
-orad = (1.+ Nur*7./8.*(4./11.)**(4./3.))*og
+ORAD = (1.+ NUR*7./8.*(4./11.)**(4./3.))*OG
 # Baryon-photon decoupling redshift (PLANCK 2015 TT,TE,EE+lowP+lensing (Table 4)):
-zd = 1059.62
-sigma_zd = 0.31 # rd(zd+sigma)-dr(zd-sigma) < 0.2 sigma_rd: we take zd to be a delta function
+ZD = 1059.62
+SIGMA_ZD = 0.31 # rd(zd+sigma)-dr(zd-sigma) < 0.2 sigma_rd: we take zd to be a delta function
 # Sound horizon at decoupling [Mpc] (PLANCK 2015 TT,TE,EE+lowP+lensing (Table 4)):
-rd = 147.41
-sigma_rd = 0.30
+RD = 147.41
+SIGMA_RD = 0.30
 
 def rs(Om,h,f_fid):
     om = Om*h**2
     ob = om * f_fid/(f_fid+1.) # f_fid: fiducial ratio omega_b/omega_c
-    R = 0.75 * ob/og
-    return 2.*c/100./np.sqrt(3.*R*om) * np.log( ( np.sqrt(1.+zd+R) + np.sqrt((1.+zd)*R*orad/om+R) ) / np.sqrt(1.+zd) / (1.+np.sqrt(R*orad/om)) ) ;
+    R = 0.75 * ob/OG
+    result = 2.*C/100./ np.sqrt(3.*R*om)* np.log( ( np.sqrt(1.+ZD+R) + np.sqrt((1.+ZD)*R*ORAD/om+R) ) / np.sqrt(1.+ZD) / (1.+np.sqrt(R*ORAD/om)) )
+    return result
 #####################################################################################################################################################
 
 
@@ -287,7 +288,9 @@ def lnprior(theta, free_para, fix_para,bounds):
         
     if withinprior:
         if withPlanck:
-            return -0.5* (rd-rs(Om,h,f_fid))**2/sigma_rd**2 
+            print(Om, h,  -0.5* rs(Om,h,f_fid))
+            return -0.5* (RD-rs(Om,h,f_fid))**2/SIGMA_RD**2 
+            
         else:            
             return 0.
     else:
@@ -322,7 +325,7 @@ def lnlike(theta,  kpred,chi2data,Cinvwdata,Cinvww, free_para, fix_para,bounds,O
     if not np.isfinite(lnprior(theta, free_para, fix_para,bounds)):
         return -100000
     else :
-
+    
         
         t0 = time.time()
         
