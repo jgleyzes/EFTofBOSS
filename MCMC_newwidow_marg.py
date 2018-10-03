@@ -288,7 +288,7 @@ def lnprior(theta, free_para, fix_para,bounds):
         
     if withinprior:
         if withPlanck:
-            print(Om, h,  -0.5* rs(Om,h,f_fid))
+#            print(Om, h,  -0.5* rs(Om,h,f_fid))
             return -0.5* (RD-rs(Om,h,f_fid))**2/SIGMA_RD**2 
             
         else:            
