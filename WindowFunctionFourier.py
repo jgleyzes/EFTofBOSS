@@ -99,7 +99,7 @@ def apply_window_PS(setPS,PS,setkout,withmask=True,windowk=0.1):
     return PStransformed
 
 
-def apply_window_covariance(Cinv,setk,thin=1,withmask=True,windowkplus=0.2,kpmin=4.e-3, bisp=False, indexkred=None, masktriangle=None):
+def apply_window_covariance(Cinv,setk,thin=1,withmask=True,windowkplus=0.2,kpmin=3.e-4, bisp=False, indexkred=None, masktriangle=None):
     """
     Apply the window function to the inverse covariance by doing a 2 convolutions directly in fourier space, encoded in Qll.
     
@@ -143,12 +143,13 @@ def apply_window_covariance(Cinv,setk,thin=1,withmask=True,windowkplus=0.2,kpmin
         setkp_or = np.loadtxt(opa.join(INPATH,'Window_functions/k.dat'))
 
         Qll = Qll[:,:,::thin,:]
+        Qll_old = 1.*Qll
         setkp_or = setkp_or[::thin]
         
-        if withmask:
-            kpgrid,kgrid = np.meshgrid(setkp_or,setk_or,indexing='ij')
-            mask = (kpgrid<kgrid+windowkplus)
-            Qll = np.einsum('lpkn,kn->lpkn',Qll,mask)
+#         if withmask:
+#             kpgrid,kgrid = np.meshgrid(setkp_or,setk_or,indexing='ij')
+#             mask = (kpgrid<kgrid+windowkplus)
+#             Qll = np.einsum('lpkn,kn->lpkn',Qll,mask)
         
         
         # the spacing (needed to do the convolution as a sum)
@@ -157,17 +158,25 @@ def apply_window_covariance(Cinv,setk,thin=1,withmask=True,windowkplus=0.2,kpmin
         Qll_weighted = np.einsum('lpkn,k->lpkn',Qll,deltak)
 
         
+        
         # Only keep value of setkp_or in the relevant range
         maskred = ((setkp_or>kpmin)&(setkp_or<setk.max()+windowkplus))
+        print maskred.shape, np.sum(maskred)
         kpred = setkp_or[maskred]
         
+#         Qll_weighted_red = Qll_weighted[:,:,maskred,:]
         Qll_weighted_red = Qll_weighted[:,:,maskred,:]
+        Qll_out = Qll_weighted_red[:,:,:,indexkred]
         
         # Put the Qll(k) on the same array as Cinv for the matrix multiplication
-        Qll_out = scipy.interpolate.interp1d(setk_or,Qll_weighted_red,axis=-1)(setk)
+#         Qll_out = 1.*Qll_weighted_red
+#         Qll_out = scipy.interpolate.interp1d(setk_or,Qll_weighted_red,axis=-1)(setk)
+#         print maskred, indexkred
+        bigW_mask = 1.*Qll_out
+#         bigW_mask = bigW_mask[:,:,:,indexkred]
+
         
         nkout = len(kpred)
-        # if bisp:
 
         
         # Cinv convoluted once for the P_model Cinv Pdata term
@@ -180,31 +189,42 @@ def apply_window_covariance(Cinv,setk,thin=1,withmask=True,windowkplus=0.2,kpmin
         Cinvpw = np.swapaxes(Cinvllpw,axis1=1,axis2=2).reshape((3*nkin,3*nkout)) 
         Cinvpww = np.swapaxes(Cinvllpww,axis1=1,axis2=2).reshape((3*nkout,3*nkout))
     if bisp:
-        #TO DO:
-        #2) verify results with previous Cinvpw
-        #3) ???
-        #4) Profit
+        
+        
         setk_or = np.loadtxt(opa.join(INPATH,'Window_functions/kp_LightConeHectorNGC.txt'))  
         setkp_or = np.loadtxt(opa.join(INPATH,'Window_functions/k.dat'))
-        setkp_or = setkp_or[::thin] 
-        if withmask:
-            kpgrid,kgrid = np.meshgrid(setkp_or,setk_or,indexing='ij')
-            mask = (kpgrid<kgrid+windowkplus)
-        deltak = setkp_or[1:] - setkp_or[:-1]
-        deltak = np.concatenate([[0],deltak])
+        setkp_or = setkp_or[::thin]
+        nkbisp = len(masktriangle) 
+#         if withmask:
+#             kpgrid,kgrid = np.meshgrid(setkp_or,setk_or,indexing='ij')
+#             mask = (kpgrid<kgrid+windowkplus)
+
 
         # Only keep value of setkp_or in the relevant range
+        
         maskred = ((setkp_or>kpmin)&(setkp_or<setk.max()+windowkplus))
         kpred = setkp_or[maskred]
+        
+        
+        #Deltak now computed from the masked k's
+        deltak = kpred[1:] - kpred[:-1]
+        
+#         deltak = setkp_or[1:] - setkp_or[:-1]
+        deltak = np.concatenate([[0],deltak])
 
+        
         # Importing the big window function without 4 indices and thinning it appropriately 
-        bigW = np.load(opa.join(INPATH,'Window_functions/bigW.npy'))
-        bigW_diet = np.zeros(shape=(bigW.shape[0], (bigW.shape[1]-nkbisp)/thin + nkbisp))
+        bigW = np.load(opa.join(INPATH,'Window_functions/bigW_new.npy'))
+        bigW_diet = np.zeros(shape=(bigW.shape[0], (bigW.shape[1]-nkbisp)/thin + nkbisp))        
         for i in range(bigW_diet.shape[0]):
             bigWcol = bigW[i,:-nkbisp]
             #Applying weight from thinning process
+#             print bigWcol.shape, nkbisp, len(masktriangle)
 
-            bigWcolthin = bigWcol[::thin]*deltak
+#             bigWcolthin = bigWcol[::thin]*np.concatenate([deltak, deltak, deltak])
+    
+            bigWcolthin = bigWcol[::thin]
+        
             #Rebuilding bigW with only the non-masked points
             bigW_diet[i,:-nkbisp] = bigWcolthin
             #Keeping the bispectrum terms that aren't thinned out
@@ -215,14 +235,19 @@ def apply_window_covariance(Cinv,setk,thin=1,withmask=True,windowkplus=0.2,kpmin
         theorymask = np.concatenate([maskred, maskred, maskred, masktriangle])
         theorypoints = np.sum(theorymask)
 
-        datamask = indexkred 
-        datapoints = np.sum(datapoints)
+        datamask = np.concatenate([indexkred, indexkred, indexkred, masktriangle]) 
+        datapoints = np.sum(datamask)
 
         matrixmask = np.outer(datamask, theorymask)
-
-        bigW_mask = bigW[matrixmask].reshape(datapoints, theorypoints)
-
-        Cinvpw = np.dot(Cinv, bigW)
-        Cinvpww = np.dot(bigW.T, Cinvw)
+        print datapoints, theorypoints, 
+        bigW_mask = bigW[matrixmask].reshape((datapoints, theorypoints))
+        
+        bigW_mask = bigW_mask[:]*np.concatenate([deltak, deltak, deltak, [1]*sum(masktriangle)])
+#         print np.concatenate([deltak, deltak, deltak])
+        
+        print bigW_mask.shape, bigW.shape, matrixmask.shape
+        Cinvllp = 1.*Cinv
+        Cinvpw = np.dot(Cinv, bigW_mask)
+        Cinvpww = np.dot(bigW_mask.T, Cinvpw)
         
     return kpred,Cinvpw,Cinvpww
