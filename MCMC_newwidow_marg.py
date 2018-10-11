@@ -584,6 +584,9 @@ if __name__ ==  "__main__":
         dataQ = np.loadtxt(opa.join(INPATH,'Window_functions/dataQ_ChallengeQuarter.dat')).T
     if 'Challenge' in simtype:
         #CHANGE THIS BACK, SETTING FULL COV TO QUARTER
+        #change RD to match the CHallenge Box cosmology
+
+        RD = 147.68188
         if 'Quarter' not in simtype:
             window = False
             simtype_false = 'ChallengeQuarter'+boxnumber
