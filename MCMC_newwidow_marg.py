@@ -77,7 +77,16 @@ def rs(Om,h,f_fid):
 #####################################################################################################################################################
 
 
-def get_Pi_for_marg(Ploop,b1):
+def embed_Pi(ploop, masktriangle):
+    #Embed the Pi into a bigger shape that has appropriate prepadding and postpadding so the bisp term can be easily added on
+    #Dimension of Pi is [nterms, 3, 100]
+    #return with dimension [nterms+1, 4, 100+nkbisp]
+    nkbisp = sum(masktriangle)
+    nkp = ploop.shape[1]
+    #Cast into bigger array of dim p
+    big_array = np.zeros(shape=(ploop.shape[0]+1,100+nkbisp)) 
+    return big_array
+def get_Pi_for_marg(Ploop,b1,bisp=None):
     Pi = np.array([Ploop[:,3,:]+b1*Ploop[:,7,:],
              Ploop[:,15,:]+b1*Ploop[:,12,:],
              Ploop[:,16,:]+b1*Ploop[:,13,:],
@@ -85,9 +94,18 @@ def get_Pi_for_marg(Ploop,b1):
              Ploop[:,18,:],
              Ploop[:,19,:],
              Ploop[:,20,:]])
-    
-    
-    
+    if withBisp:
+        #b8 is not marginalized with bisp but b11 is.
+        #print(Ploop[:,3,:].shape, Ploop[:,7,:].shape, postpad.shape)
+
+        #don't have b8 term
+
+        Pi = np.array([Ploop[:,3,:]+b1*Ploop[:,7,:],
+                 Ploop[:,15,:]+b1*Ploop[:,12,:],
+                 Ploop[:,16,:]+b1*Ploop[:,13,:],
+                 Ploop[:,17,:]+b1*Ploop[:,14,:],
+                 Ploop[:,19,:],
+                 Ploop[:,20,:]]) 
     return Pi
     
 
@@ -335,13 +353,19 @@ def lnlike(theta,  kpred,chi2data,Cinvwdata,Cinvww, free_para, fix_para,bounds,O
             free_para = np.array(free_para)            
             free_para[[5,7,8,9,10,11,12,13]] = np.array([False]*8)
             fix_para[[5,7,8,9,10,11,12,13]] = np.array([0]*8)
+            if withBisp:
+                #b8 is not marginalized over when bisp is present
+                free_para[[5,7,8,9,11,12,13]] = np.array([False]*7)
+                fix_para[[5,7,8,9,11,12,13]] = np.array([0]*7)
         #print(match_para(theta, free_para, fix_para))
         lnAs,Om,h,b1,b2,b3,b4,b5,b6,b7,b8,b9,b10,b11 = match_para(theta, free_para, fix_para)
             
     # Import the power spectra interpolators on the grid
-
-        
-        Plininterp,Ploopinterp,Sigsqinterp = interpolation_grid 
+ 
+        if withBisp:    
+            Plininterp,Ploopinterp,Sigsqinterp,Bispinterp= interpolation_grid 
+        else: 
+            Plininterp,Ploopinterp,Sigsqinterp = interpolation_grid 
         
         kfull = Ploopinterp((lnAs,Om,h))[:,0]
     
@@ -353,6 +377,15 @@ def lnlike(theta,  kpred,chi2data,Cinvwdata,Cinvww, free_para, fix_para,bounds,O
         sigsq = float(Sigsqinterp((lnAs,Om,h)))
         # Get sigma^2 to be removed
         
+        if withBisp:
+            if type(masktriangle) ==  type(None) or type(Bispdata) == type(None) or type(Bispinterp) ==  type(None):
+                raise Exception('You want to use the bispectrum but forgot to provide a mask for the triangle or the data or the interpolation of the Bisp. Can be found in input/')
+            if Cinv.shape[0] != xdata.shape + sum(masktriangle):
+                raise Exception('You want to use the bispectrum but forgot to use the full covariance for power spectrum + Bisp. Can be found in input/Covariance')
+        
+            TermsBisp = Bispinterp((lnAs,Om,h))
+            bval = np.array([1.,b1,b2,b4,b1*b11,b1**2,b1*b2,b1*b4,b1**3,b1**2*b2,b1**2*b4,b8**2])
+            Bisp = 1.*np.dot(bval,TermsBisp[3:])
      
         # Compute the PS       
         valueb = np.array([b1,b2,b3,b4,b5,b6,b7,b8,b9,b10])        
@@ -363,7 +396,11 @@ def lnlike(theta,  kpred,chi2data,Cinvwdata,Cinvww, free_para, fix_para,bounds,O
         qperp,qpar = get_AP_param(Om,Om_fid)
         
         if marg_gaussian:
-            Pi_or = get_Pi_for_marg(Ploop,b1)
+            if withBisp:
+                Pi_or = get_Pi_for_marg(Ploop,b1, TermsBisp[3:])
+            else: 
+                Pi_or = get_Pi_for_marg(Ploop,b1)
+        #print(Pi_or.shape, 'is original Pi shape')
     
         if not binning:
             PmodelAP = APpowerspectraNkmu.changetoAPnobinning(Pmodel,kfull,kfullred,qperp,qpar,nbinsmu=100)
@@ -381,11 +418,32 @@ def lnlike(theta,  kpred,chi2data,Cinvwdata,Cinvww, free_para, fix_para,bounds,O
         #print(kfullred.shape, kfull.shape, PmodelAP.shape)
         Pmodel_extrap = scipy.interpolate.interp1d(kfullred,PmodelAP,axis=-1,bounds_error=False,fill_value='extrapolate')(kpred)
         modelX = Pmodel_extrap.reshape(-1)
+        if withBisp:
+            modelX = np.concatenate([modelX, Bisp[masktriangle]])
         if marg_gaussian:
             Pi_extrap = (scipy.interpolate.interp1d(kfullred,Pi_AP,axis=-1,bounds_error=False,fill_value='extrapolate')(kpred)).reshape((Pi_AP.shape[0],-1))
-            Covbi = get_Covbi_for_marg(Pi_extrap,Cinvww,sigma=100)
+            Pi_tot = 1.*Pi_extrap
+            #print(Pi_tot.shape, ' is Pi total shape', kfull.shape, kfullred.shape, Pi_extrap.shape, ' is Pi extrap shape', kpred.shape)
+            if withBisp:
+                #Building a bigger Pi to include bispectrum term
+                nparams = Pi_tot.shape[0]
+                nkpred = Pi_tot.shape[1]
+                nkbisp = sum(masktriangle)
+                #print(Pi_tot.shape, TermsBisp[3:].shape, TermsBisp.shape)
+                #Removing triangle contributions from the bispectrum expressions
+                TermsBisp = TermsBisp[3:]
+                #Applying mask and only getting b11 contribution
+                bisp = TermsBisp[4][masktriangle]
+                
+                newPi = np.zeros(shape=(nparams+1, nkpred+nkbisp))
+                newPi[:nparams, :nkpred] = Pi_tot
+                newPi[-1, nkpred:] = b1*bisp
+                #total Pi is now the correctly embedded one
+                Pi_tot = 1.*newPi 
+
+            Covbi = get_Covbi_for_marg(Pi_tot,Cinvww,sigma=100)
             Cinvbi = np.linalg.inv(Covbi)
-            vectorbi = np.dot(modelX,np.dot(Cinvww,Pi_extrap.T))-np.dot(Cinvwdata,Pi_extrap.T)
+            vectorbi = np.dot(modelX,np.dot(Cinvww,Pi_tot.T))-np.dot(Cinvwdata,Pi_tot.T)
             chi2nomar = np.dot(modelX,np.dot(Cinvww,modelX))-2*np.dot(Cinvwdata,modelX)+chi2data
             chi2mar = -np.dot(vectorbi,np.dot(Cinvbi,vectorbi))+np.log(np.linalg.det(Covbi))
             chi2 = chi2mar + chi2nomar
@@ -488,7 +546,7 @@ if __name__ ==  "__main__":
     
     
     withBisp = False 
- 
+    
     window = True
     #### Choice for the data #####
     #For lightcone simulations, need to specify north or south for now (later, merge the two but I'm missing the covariance for SGC
@@ -503,17 +561,23 @@ if __name__ ==  "__main__":
     kminbisp = kmin
     
     kmaxbisp = float(sys.argv[6])
+    if kmaxbisp > 0:
+        withBisp = True
+        print('kmax bispectrum is bigger than zero, withBisp is %s'%withBisp)
+    #withMarg is 1 or 0
+    withMarg = int(sys.argv[7])
     #workaround setting of marg_gauss, kmaxbisp = 0.07 is true and kmaxbisp = 0.08 is false
-    if kmaxbisp == 0.07:
+    if withMarg:
         marg_gaussian = True
-        free_para =  [True,True,True,True,True,False,True,False,False,False,False,False,False,withBisp]
+        #b8 is free if bispectrum, b11 is never varied now (marged if bisp)
+        free_para =  [True,True,True,True,True,False,True,False,False,False,withBisp,False,False,False]
         a = 1.8
-        print("kmaxbisp is", kmaxbisp, " setting marg_gaussian to ", marg_gaussian)
-    elif kmaxbisp == 0.08 or kmaxbisp == 0.09:
+        print("withMarg is ", withMarg, " setting marg_gaussian to ", marg_gaussian)
+    else:
         marg_gaussian = False
         free_para =  [True,True,True,True,True,True,True,True,True,True,False,True,False,withBisp]
         a = 1.15
-        print("kmaxbisp is", kmaxbisp, " setting marg_gaussian to ", marg_gaussian)
+        print("withMarg is", withMarg, " setting marg_gaussian to ", marg_gaussian)
     if ZONE != '':    
         dataQ = np.loadtxt(opa.join(INPATH,'Window_functions/dataQ_%s.txt'%ZONE)).T 
     elif 'ChallengeQuarter' in simtype:
@@ -532,8 +596,10 @@ if __name__ ==  "__main__":
     
     print("here")    
     #bra
-    runtype = simtype+ZONE
-    
+    runtype = simtype+ZONE 
+    if not marg_gaussian:
+        if withBisp:
+            raise(Exception("Non-marginalized bispectrum is currently not implemented!"))
     Bispdata = [] 
     masktriangle = []
     if withBisp:
@@ -601,9 +667,16 @@ if __name__ ==  "__main__":
             xdata = kPS[(kPS<kmax)&(kPS>kmin)]
             ydata = PSdata[(kPS<kmax)&(kPS>kmin)]
             indexkred = np.argwhere((kPS<kmax)&(kPS>kmin))[:,0]
+            
+            kindex = 1.*indexkred
+            kmask = np.array([False]*len(kPS))
+            kmask[kindex.astype(int)] = True
+            kmask = kmask[:len(kmask)/3]
+
             if withBisp:
                 indextriangle = np.argwhere(masktriangle)[:,0]+kPS.shape[0]
                 indexkred = np.concatenate([indexkred,indextriangle])
+                ydata = np.concatenate([ydata, Bispdata[masktriangle]])
             print("triangle length is", np.argwhere(masktriangle)[:,0].shape)        
             Covred = Full_Cov[indexkred[:,None],indexkred]
 
@@ -616,7 +689,7 @@ if __name__ ==  "__main__":
             elif 'Quarter' in simtype:
                 raise(Exception("Quarter window function not yet implemented! Look at hard-coded path in WindowFunctionFourier.py for more information"))
             else:
-                kpred,Cinvw,Cinvww = WindowFunctionFourier.apply_window_covariance(Cinv,xdata,thin=2)
+                kpred,Cinvw,Cinvww = WindowFunctionFourier.apply_window_covariance(Cinv,xdata,thin=2, bisp = withBisp, indexkred = kmask, masktriangle = masktriangle)
             
             chi2data = np.dot(ydata,np.dot(Cinv,ydata))
             Cinvwdata = np.dot(ydata, Cinvw)     
@@ -647,9 +720,8 @@ if __name__ ==  "__main__":
         if withPlanck:
             runtype+= 'withPlanck'
         print('withPlanck is ', withPlanck)
-        if kmaxbisp == 0.09:
-            epsilon = 0.01
-            runtype+= 'smallEps'
+        epsilon = 0.01
+
         if marg_gaussian:
             runtype += 'gaussMarg'
         t0 = time.time()
@@ -747,6 +819,7 @@ if __name__ ==  "__main__":
         
         itercounter  =  itercounter + chainstep
         print("chain length  = ",itercounter," minlength  = ",minlength)
+        sys.stdout.flush()
         samplesJG = []
         for jj in range(0, Nchains):
             # Since we write the chain to a file we could put storechain = False, but in that case
