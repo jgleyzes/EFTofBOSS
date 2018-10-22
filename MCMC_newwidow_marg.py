@@ -566,6 +566,11 @@ if __name__ ==  "__main__":
         print('kmax bispectrum is bigger than zero, withBisp is %s'%withBisp)
     #withMarg is 1 or 0
     withMarg = int(sys.argv[7])
+
+    #Defines if will use a covariance with theory error or not
+    theoryCovness = float(sys.argv[8])
+
+
     #workaround setting of marg_gauss, kmaxbisp = 0.07 is true and kmaxbisp = 0.08 is false
     if withMarg:
         marg_gaussian = True
@@ -594,9 +599,12 @@ if __name__ ==  "__main__":
             Full_Cov = np.loadtxt(opa.join(INPATH,'Covariance/Cov%s%s.dat'%(simtype_false,ZONE)))
         else:
             Full_Cov = np.loadtxt(opa.join(INPATH,'Covariance/Cov%s%s.dat'%(simtype,ZONE)))
-    else: 
-        Full_Cov = np.loadtxt(opa.join(INPATH,'Covariance/Cov%s%sdata.dat'%(simtype,ZONE)))
-    
+    else:
+        if theoryCovness == 0:
+            Full_Cov = np.loadtxt(opa.join(INPATH,'Covariance/Cov%s%sdata.dat'%(simtype,ZONE)))
+        else:
+            Full_Cov = np.loadtxt(opa.join(INPATH,'Covariance/Cov%s%s_Theory_a%s.dat'%(simtype,ZONE,theoryCovness)))
+            runtype+='tCov%s'%theoryCovness
     print("here")    
     #bra
     runtype = simtype+ZONE 
