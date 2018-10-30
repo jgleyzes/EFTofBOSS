@@ -571,6 +571,7 @@ if __name__ ==  "__main__":
     theoryCovness = float(sys.argv[8])
 
 
+    runtype = simtype+ZONE 
     #workaround setting of marg_gauss, kmaxbisp = 0.07 is true and kmaxbisp = 0.08 is false
     if withMarg:
         marg_gaussian = True
@@ -592,13 +593,15 @@ if __name__ ==  "__main__":
         #change RD to match the CHallenge Box cosmology
 
         RD = 147.68188
-        if 'Quarter' not in simtype:
+        if 'Quarter' and 'Japan' not in simtype:
             window = False
             simtype_false = 'ChallengeQuarter'+boxnumber
             print('Using quarter covariance instead of full')
             Full_Cov = np.loadtxt(opa.join(INPATH,'Covariance/Cov%s%s.dat'%(simtype_false,ZONE)))
+        elif 'Japan' in simtype:
+            Full_Cov = np.loadtxt(opa.join(INPATH,'Covariance/Cov%s_%s.dat'%(runtype,boxnumber)))
         else:
-            Full_Cov = np.loadtxt(opa.join(INPATH,'Covariance/Cov%s%s.dat'%(simtype,ZONE)))
+            Full_Cov = np.loadtxt(opa.join(INPATH,'Covariance/Cov%s%s.dat'%(runtype,ZONE)))
     else:
         if theoryCovness == 0:
             Full_Cov = np.loadtxt(opa.join(INPATH,'Covariance/Cov%s%sdata.dat'%(simtype,ZONE)))
@@ -607,7 +610,6 @@ if __name__ ==  "__main__":
             runtype+='tCov%s'%theoryCovness
     print("here")    
     #bra
-    runtype = simtype+ZONE 
     if not marg_gaussian:
         if withBisp:
             raise(Exception("Non-marginalized bispectrum is currently not implemented!"))
@@ -628,7 +630,7 @@ if __name__ ==  "__main__":
     #marg_gaussian = True
     
 
-    lnAsmin,lnAsmax,Ommin,Ommax,hmin,hmax,interpolation_grid = get_grid(gridname,nbinsAs=100,withBisp=withBisp)    
+    lnAsmin,lnAsmax,Ommin,Ommax,hmin,hmax,interpolation_grid = get_grid(gridname,nbinsAs=115,withBisp=withBisp)    
     print("got grid!")    
 ##############################
 ###  Priors ###################
@@ -670,7 +672,8 @@ if __name__ ==  "__main__":
 
     for boxnumber in [boxnumber]:
 	if 'Challenge' in simtype:
-	    simtype = simtype[:-1]
+            if 'Japan' not in simtype:
+	        simtype = simtype[:-1]
         kPS,PSdata,_ = np.loadtxt(opa.join(INPATH,'DataSims/ps1D_%s%s_%s.dat'%(simtype,ZONE,boxnumber))).T
         klog = np.loadtxt(opa.join(INPATH,'Window_functions/k.dat'))
         for indexk,kmax in enumerate(kmaxtab):    
@@ -694,12 +697,14 @@ if __name__ ==  "__main__":
             Cinv = np.linalg.inv(Covred)
             #Window function shouldn't be applied for full challenge box
             if 'Challenge' in simtype and 'Quarter' not in simtype:
+                #print("Am I doing this instead?")
                 kpred = xdata[:len(xdata)/3]
                 Cinvw = Cinv
                 Cinvww = Cinv
             elif 'Quarter' in simtype:
                 raise(Exception("Quarter window function not yet implemented! Look at hard-coded path in WindowFunctionFourier.py for more information"))
             else:
+                #print("I'm applying the window function!!")
                 kpred,Cinvw,Cinvww = WindowFunctionFourier.apply_window_covariance(Cinv,xdata,thin=2, bisp = withBisp, indexkred = kmask, masktriangle = masktriangle)
             
             chi2data = np.dot(ydata,np.dot(Cinv,ydata))
