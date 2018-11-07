@@ -134,7 +134,7 @@ def check_if_multipoles_k_array(setk):
             
 
 
-def get_grid(gridname,nbinsAs=100,nbins = 50,withBisp=False):
+def get_grid(gridname,nbinsAs=100,nbins = 50,withBisp=False,sigsq=True):
     
     """ Computes the power spectra given the b_i and the EFT power spectra
         Inputs
@@ -147,37 +147,64 @@ def get_grid(gridname,nbinsAs=100,nbins = 50,withBisp=False):
         ------
         The min,max values for the three parameters as well as the interpolation for the linear and loop power spectra
     """
-    
-    thetatab = np.load(opa.abspath(opa.join(INPATH,'GridsEFT/Tablecoord%s.npy'%gridname)))
+    if sigsq:
+        thetatab = np.load(opa.abspath(opa.join(INPATH,'GridsEFT/Tablecoord%s.npy'%gridname)))
+        print(thetatab.shape)
+        theta3D = thetatab.reshape((nbinsAs,nbins,nbins,3))
 
-    theta3D = thetatab.reshape((nbinsAs,nbins,nbins,3))
-
-    lnAstab = theta3D[:,0,0,0]
-    Omtab = theta3D[0,:,0,1]
-    htab = theta3D[0,0,:,2]
+        lnAstab = theta3D[:,0,0,0]
+        Omtab = theta3D[0,:,0,1]
+        htab = theta3D[0,0,:,2]
 
 
-    lnAsmin = lnAstab.min()
-    lnAsmax = lnAstab.max()
-    Ommin = Omtab.min()
-    Ommax = Omtab.max()
-    hmin = htab.min()
-    hmax = htab.max()
+        lnAsmin = lnAstab.min()
+        lnAsmax = lnAstab.max()
+        Ommin = Omtab.min()
+        Ommax = Omtab.max()
+        hmin = htab.min()
+        hmax = htab.max()
 
-    TablePlin = np.load(opa.abspath(opa.join(INPATH,'GridsEFT/TablePlin%s.npy'%gridname)))
-    TablePloop = np.load(opa.abspath(opa.join(INPATH,'GridsEFT/TablePloop%s.npy'%gridname)))
-    Tablesigsq = np.load(opa.abspath(opa.join(INPATH,'GridsEFT/Tablesigsq%s.npy'%gridname)))
-
-    Plininterp = scipy.interpolate.RegularGridInterpolator((lnAstab,Omtab,htab),TablePlin.reshape((nbinsAs,nbins,nbins,TablePlin.shape[-2],TablePlin.shape[-1])))
-    Ploopinterp = scipy.interpolate.RegularGridInterpolator((lnAstab,Omtab,htab),TablePloop.reshape((nbinsAs,nbins,nbins,TablePloop.shape[-2],TablePloop.shape[-1])))
-    Sigsqinterp = scipy.interpolate.RegularGridInterpolator((lnAstab,Omtab,htab),Tablesigsq.reshape((nbinsAs,nbins,nbins)))
-    
-    interpolations = [Plininterp,Ploopinterp,Sigsqinterp]
-    if withBisp:
-        TableBisp = np.load(opa.abspath(opa.join(INPATH,'GridsEFT/TableBisp%s.npy'%gridname)))
-        Bispinterp = scipy.interpolate.RegularGridInterpolator((lnAstab,Omtab,htab),TableBisp.reshape((nbinsAs,nbins,nbins,TableBisp.shape[-2],TableBisp.shape[-1])))
-        interpolations = [Plininterp,Ploopinterp,Sigsqinterp,Bispinterp]
+        TablePlin = np.load(opa.abspath(opa.join(INPATH,'GridsEFT/TablePlin%s.npy'%gridname)))
+        TablePloop = np.load(opa.abspath(opa.join(INPATH,'GridsEFT/TablePloop%s.npy'%gridname)))
+        Tablesigsq = np.load(opa.abspath(opa.join(INPATH,'GridsEFT/Tablesigsq%s.npy'%gridname)))
+        #print(TablePlin.shape, TablePloop.shape, Tablesigsq.shape, theta3D.shape)
+        Plininterp = scipy.interpolate.RegularGridInterpolator((lnAstab,Omtab,htab),TablePlin.reshape((nbinsAs,nbins,nbins,TablePlin.shape[-2],TablePlin.shape[-1])))
+        Ploopinterp = scipy.interpolate.RegularGridInterpolator((lnAstab,Omtab,htab),TablePloop.reshape((nbinsAs,nbins,nbins,TablePloop.shape[-2],TablePloop.shape[-1])))
+        Sigsqinterp = scipy.interpolate.RegularGridInterpolator((lnAstab,Omtab,htab),Tablesigsq.reshape((nbinsAs,nbins,nbins)))
         
+        interpolations = [Plininterp,Ploopinterp,Sigsqinterp]
+        if withBisp:
+            TableBisp = np.load(opa.abspath(opa.join(INPATH,'GridsEFT/TableBisp%s.npy'%gridname)))
+            Bispinterp = scipy.interpolate.RegularGridInterpolator((lnAstab,Omtab,htab),TableBisp.reshape((nbinsAs,nbins,nbins,TableBisp.shape[-2],TableBisp.shape[-1])))
+            interpolations = [Plininterp,Ploopinterp,Sigsqinterp,Bispinterp]
+    else:
+
+        thetatab = np.load(opa.abspath(opa.join(INPATH,'GridsEFT/Tablecoord%s.npy'%gridname)))
+        print(thetatab.shape)
+        theta3D = thetatab.reshape((nbinsAs,nbins,nbins,3))
+
+        lnAstab = theta3D[:,0,0,0]
+        Omtab = theta3D[0,:,0,1]
+        htab = theta3D[0,0,:,2]
+
+
+        lnAsmin = lnAstab.min()
+        lnAsmax = lnAstab.max()
+        Ommin = Omtab.min()
+        Ommax = Omtab.max()
+        hmin = htab.min()
+        hmax = htab.max()
+
+        TablePlin = np.load(opa.abspath(opa.join(INPATH,'GridsEFT/TablePlin%s.npy'%gridname)))
+        TablePloop = np.load(opa.abspath(opa.join(INPATH,'GridsEFT/TablePloop%s.npy'%gridname)))
+        Plininterp = scipy.interpolate.RegularGridInterpolator((lnAstab,Omtab,htab),TablePlin.reshape((nbinsAs,nbins,nbins,TablePlin.shape[-2],TablePlin.shape[-1])))
+        Ploopinterp = scipy.interpolate.RegularGridInterpolator((lnAstab,Omtab,htab),TablePloop.reshape((nbinsAs,nbins,nbins,TablePloop.shape[-2],TablePloop.shape[-1])))
+        
+        interpolations = [Plininterp,Ploopinterp]
+        if withBisp:
+            TableBisp = np.load(opa.abspath(opa.join(INPATH,'GridsEFT/TableBisp%s.npy'%gridname)))
+            Bispinterp = scipy.interpolate.RegularGridInterpolator((lnAstab,Omtab,htab),TableBisp.reshape((nbinsAs,nbins,nbins,TableBisp.shape[-2],TableBisp.shape[-1])))
+            interpolations = [Plininterp,Ploopinterp,Bispinterp]
     return lnAsmin,lnAsmax,Ommin,Ommax,hmin,hmax,interpolations
     
 def computePS(cvals,datalin,dataloop,setkin,setkout,sigsq=0):
@@ -361,12 +388,16 @@ def lnlike(theta,  kpred,chi2data,Cinvwdata,Cinvww, free_para, fix_para,bounds,O
         lnAs,Om,h,b1,b2,b3,b4,b5,b6,b7,b8,b9,b10,b11 = match_para(theta, free_para, fix_para)
             
     # Import the power spectra interpolators on the grid
- 
-        if withBisp:    
-            Plininterp,Ploopinterp,Sigsqinterp,Bispinterp= interpolation_grid 
-        else: 
-            Plininterp,Ploopinterp,Sigsqinterp = interpolation_grid 
-        
+        try: 
+            if withBisp:    
+                Plininterp,Ploopinterp,Sigsqinterp,Bispinterp= interpolation_grid 
+            else: 
+                Plininterp,Ploopinterp,Sigsqinterp = interpolation_grid 
+        except:
+            if withBisp:    
+                Plininterp,Ploopinterp,Bispinterp= interpolation_grid 
+            else: 
+                Plininterp,Ploopinterp = interpolation_grid 
         kfull = Ploopinterp((lnAs,Om,h))[:,0]
     
         if check_if_multipoles_k_array(kfull):
@@ -374,7 +405,10 @@ def lnlike(theta,  kpred,chi2data,Cinvwdata,Cinvww, free_para, fix_para,bounds,O
         kfullred = kfull[kfull<kpred.max()+0.1]
         Ploop = np.swapaxes(Ploopinterp((lnAs,Om,h)).reshape(3,len(kfull),22),axis1 = 1,axis2 = 2)[:,1:,:]
         Plin = np.swapaxes(Plininterp((lnAs,Om,h)).reshape(3,len(kfull),4),axis1 = 1,axis2 = 2)[:,1:,:]       
-        sigsq = float(Sigsqinterp((lnAs,Om,h)))
+        try:
+            sigsq = float(Sigsqinterp((lnAs,Om,h)))
+        except:
+            sigsq = 0
         # Get sigma^2 to be removed
         
         if withBisp:
@@ -389,7 +423,7 @@ def lnlike(theta,  kpred,chi2data,Cinvwdata,Cinvww, free_para, fix_para,bounds,O
      
         # Compute the PS       
         valueb = np.array([b1,b2,b3,b4,b5,b6,b7,b8,b9,b10])        
-        Pmodel_original = computePS(valueb,Plin,Ploop,kfull,kfull,sigsq=sigsq)
+        Pmodel_original = computePS(valueb,Plin,Ploop,kfull,kfull,sigsq=0)
         Pmodel = Pmodel_original.copy()
     
         #The AP parameters
@@ -628,9 +662,11 @@ if __name__ ==  "__main__":
     binning = False
     TableNkmu = None
     #marg_gaussian = True
-    
-
-    lnAsmin,lnAsmax,Ommin,Ommax,hmin,hmax,interpolation_grid = get_grid(gridname,nbinsAs=115,withBisp=withBisp)    
+    nbinsAs = 100
+    if 'Japan' in simtype:
+        nbinsAs = 100
+        nbins = 48
+        lnAsmin,lnAsmax,Ommin,Ommax,hmin,hmax,interpolation_grid = get_grid(gridname,nbinsAs=nbinsAs,nbins=nbins,withBisp=withBisp,sigsq=False)    
     print("got grid!")    
 ##############################
 ###  Priors ###################
