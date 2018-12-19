@@ -1,0 +1,5 @@
+
+
+Error running input_init_from_arguments 
+=>input_init_from_arguments(L:148) :error in parser_read_file(precision_file,&fc_precision,errmsg);
+=>parser_read_file(L:15) :could not open inputfile with name /home/pchonje/Documents/EFTofLSS/EFTofBOSS/class/prout.pre and mode "r"

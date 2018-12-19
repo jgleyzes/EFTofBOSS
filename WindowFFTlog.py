@@ -6,11 +6,11 @@ import os.path as opa
 import scipy.interpolate
 import scipy.interpolate as sp
 import sys
-import matplotlib.pyplot as plt
-import mcfit
-from classy import Class
+#import matplotlib.pyplot as plt
+#import mcfit
+#from classy import Class
 import pandas as pd
-import fftlog
+import pyfftlog as fftlog
 # Save this path (expect data and other needed executables present in relative paths!!!)
 THIS_PATH = opa.dirname(opa.dirname(__file__))
 
@@ -323,9 +323,9 @@ def transformQ(Pkin,setkin,setkout,dataQ,n=2**12,kr=1,extrap=True,setkextrap = 1
     P2k=P2int(k)
     P4k=P4int(k)
 
-    kr0, wsave0, ok0 = fftlog.fhti(n, 0.5, dlnk, q, kr, kropt)
-    kr2, wsave2, ok2 = fftlog.fhti(n, 2+0.5, dlnk, q, kr, kropt)
-    kr4, wsave4, ok4 = fftlog.fhti(n, 4+0.5, dlnk, q, kr, kropt)
+    kr0, wsave0 = fftlog.fhti(n, 0.5, dlnk, q, kr, kropt)
+    kr2, wsave2 = fftlog.fhti(n, 2+0.5, dlnk, q, kr, kropt)
+    kr4, wsave4 = fftlog.fhti(n, 4+0.5, dlnk, q, kr, kropt)
 
     logrc = np.log(kr) - logkc
     r = np.exp(logrc + (np.arange(1, n+1) - nc)*dlnk)

@@ -161,7 +161,7 @@ def apply_window_covariance(Cinv,setk,thin=1,withmask=True,windowkplus=0.2,kpmin
         
         # Only keep value of setkp_or in the relevant range
         maskred = ((setkp_or>kpmin)&(setkp_or<setk.max()+windowkplus))
-        print maskred.shape, np.sum(maskred)
+        #print maskred.shape, np.sum(maskred)
         kpred = setkp_or[maskred]
         
 #         Qll_weighted_red = Qll_weighted[:,:,maskred,:]
@@ -215,7 +215,7 @@ def apply_window_covariance(Cinv,setk,thin=1,withmask=True,windowkplus=0.2,kpmin
         
         # Importing the big window function without 4 indices and thinning it appropriately 
         bigW = np.load(opa.join(INPATH,'Window_functions/bigW_new.npy'))
-        bigW_diet = np.zeros(shape=(bigW.shape[0], (bigW.shape[1]-nkbisp)/thin + nkbisp))        
+        bigW_diet = np.zeros(shape=(bigW.shape[0], (bigW.shape[1]-nkbisp)/thin + nkbisp))
         for i in range(bigW_diet.shape[0]):
             bigWcol = bigW[i,:-nkbisp]
             #Applying weight from thinning process
@@ -224,6 +224,9 @@ def apply_window_covariance(Cinv,setk,thin=1,withmask=True,windowkplus=0.2,kpmin
 #             bigWcolthin = bigWcol[::thin]*np.concatenate([deltak, deltak, deltak])
     
             bigWcolthin = bigWcol[::thin]
+
+            # odd number of entries
+            #bigWcolthin = bigWcolthin[:-1]
         
             #Rebuilding bigW with only the non-masked points
             bigW_diet[i,:-nkbisp] = bigWcolthin
@@ -239,13 +242,13 @@ def apply_window_covariance(Cinv,setk,thin=1,withmask=True,windowkplus=0.2,kpmin
         datapoints = np.sum(datamask)
 
         matrixmask = np.outer(datamask, theorymask)
-        print datapoints, theorypoints, 
+        #print datapoints, theorypoints, 
         bigW_mask = bigW[matrixmask].reshape((datapoints, theorypoints))
         
         bigW_mask = bigW_mask[:]*np.concatenate([deltak, deltak, deltak, [1]*sum(masktriangle)])
 #         print np.concatenate([deltak, deltak, deltak])
         
-        print bigW_mask.shape, bigW.shape, matrixmask.shape
+        #print bigW_mask.shape, bigW.shape, matrixmask.shape
         Cinvllp = 1.*Cinv
         Cinvpw = np.dot(Cinv, bigW_mask)
         Cinvpww = np.dot(bigW_mask.T, Cinvpw)

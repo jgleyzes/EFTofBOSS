@@ -1,0 +1,5 @@
+FourierWindow produces window functions in Fourier space.
+
+Type 'make'.
+Run './FourierWindow [option]' 
+with [option]='ChallengeQuarter' for example.

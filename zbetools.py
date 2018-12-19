@@ -7,9 +7,9 @@ import subprocess as sp
 import logging
 from glob import glob
 import os.path as opa
-THIS_PATH = opa.dirname(opa.dirname(__file__))
+THIS_PATH = opa.dirname(opa.abspath(__file__))
 
-EFT_PATH = opa.abspath(opa.join(THIS_PATH,'RedshiftBiasEFT_v2.2/')) # Expects the EFT code compiled here!!!
+EFT_PATH = opa.abspath(opa.join(THIS_PATH,'RedshiftBiasEFTwithFFT/')) # Expects the EFT code compiled here!!!
 metafilpath = opa.join(EFT_PATH,'metafil/')
 if opa.isdir(metafilpath):
     import sys
@@ -35,25 +35,27 @@ DEFAULTCONFIG_CLASS = cfg.ConfigObj({
                 'omega_cdm':0.111867,
                 'output':'mPk', 
                 'P_k_max_h/Mpc':20,
-                'root':'class_planck2015_',
+                #'P_k_max_h/Mpc':2,
+                'root':'class_',
                 'headers':'no',
                 'format':'camb',
+                'YHe':0.24,          ### We do not use prior from BBN in order to explore the full parameter space (h, Om, As) (with Omb/Omc fixed). The relative difference in the matter power spectrum is insignificant anyway...
                 'z_pk':0.55}) 
 DEFAULTCONFIG_zbEFT = cfg.ConfigObj({
                 'knl':1.,
                 'km':1.,
                 'nbar':0.00952380952,
-                'PathToLinearPowerSpectrum':'pk.dat',
+                'PathToLinearPowerSpectrum':'class_pk.dat',
                 'PathToFolderOutput':'output',
                 'PathToFolderRD':'resum_data',
                 'PathToFolderCosmoRef':'./cosmo_ref',
-                'ComputePowerSpectrum':'no',
+                'ComputePowerSpectrum':'yes',
                 'UseCosmoRef':'no',
                 'ImportResummationMatrix':'no',
                 'ExportResummationMatrix':'no',
-                'ComputeBispectrum':'yes',
-                 'EpsRel_IntegrBispectrumAP':1e-3,
-                 'PathToTriangles' : Trianglepath,
+                'ComputeBispectrum':'no',
+                'EpsRel_IntegrBispectrumAP':1e-3,
+                'PathToTriangles' : Trianglepath,
                 # The below should never be set separately from CLASS!
                 'z_pk':DEFAULTCONFIG_CLASS['z_pk'],
                 'omega_b':DEFAULTCONFIG_CLASS['omega_b'],
@@ -62,7 +64,7 @@ DEFAULTCONFIG_zbEFT = cfg.ConfigObj({
                 'n_s':DEFAULTCONFIG_CLASS['n_s'],
                 'h':DEFAULTCONFIG_CLASS['h'],
                 'EpsAbs_NoCosmoRef' : 0.1,
-                'EpsRel_NoCosmoRef' : 1e-5,
+                'EpsRel_NoCosmoRef' : 1e-3,
                 'EpsAbs_YesCosmoRef' : 0.1,
                 'EpsRel_YesCosmoRef' : 1e-2,
                 'aperp':1,
@@ -79,6 +81,7 @@ DEFAULTCONFIG_zbEFTw = cfg.ConfigObj({
                 'logfile':'zbEFT.log',
                 'CLASS_path':'../../class/',
                 'CLASS_exe':'class',
+                'CLASS_pre':'pk_ref.pre',
                 'zbEFT_path':'./',
                 'zbEFT_exe':'RedshiftBiasEFT',
                 'DM':False, # EFT parameter values are different for DM-only to galaxies
@@ -142,6 +145,7 @@ def setup_outputs(config_class,config_zbEFT,config_zbEFTw):
     # Check what has been provided - prepend folder if none is present
     [
         config_zbEFTw['CLASS_exe'], # Where to find the class executable
+        config_zbEFTw['CLASS_pre'],
         config_class['root'], # Where to save the class linear pk
         config_zbEFTw['zbEFT_exe'], # Where to find the zbeft executable
         config_zbEFT['PathToFolderOutput'], # General output directory for zbeft
@@ -149,6 +153,7 @@ def setup_outputs(config_class,config_zbEFT,config_zbEFTw):
         config_zbEFT['PathToFolderRD'], # Where to find/save intermediate files: resummation data
         config_zbEFT['PathToFolderCosmoRef'] # Where to find/save intermediate files: resummation data
     ] = safe_prepend_folder([
+            config_zbEFTw['CLASS_path'],
             config_zbEFTw['CLASS_path'],
             config_zbEFTw['outpath'],
             config_zbEFTw['zbEFT_path'],
@@ -158,6 +163,7 @@ def setup_outputs(config_class,config_zbEFT,config_zbEFTw):
             config_zbEFTw['outpath']
             ],[
             config_zbEFTw['CLASS_exe'],
+            config_zbEFTw['CLASS_pre'],
             config_class['root'],
             config_zbEFTw['zbEFT_exe'],
             '', # PathToFolderOutput should always be set automatically!!

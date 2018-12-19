@@ -166,7 +166,7 @@ def run_zbEFT(config):
                             ['CLASS_configf','zbEFT_configf','zbEFTw_configf'], indfmeta=2)
     
     # Run CLASS (someday maybe use classy)
-    command = [czbEFTw['CLASS_exe'],czbEFTw['CLASS_configf']]
+    command = [czbEFTw['CLASS_exe'],czbEFTw['CLASS_configf'], czbEFTw['CLASS_pre']]
     zbetools.runcommand(command, czbEFTw['logfile'], 
                         czbEFT['PathToLinearPowerSpectrum'], cwd=op.dirname(czbEFTw['CLASS_exe']))
     

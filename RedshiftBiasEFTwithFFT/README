@@ -1,0 +1,208 @@
+RedshiftBiasEFTwithFFT (30/08/2018)
+
+Designed by: L. Senatore, Pierre Zhang
+Developed by: Pierre Zhang
+
+Introduction
+------------
+RedshiftBiasEFTwithFFT is a C++ code that computes the IR-resummed power spectrum of biased tracers in redshift space at the one loop.
+The loops are calculated analytically for power-law power spectra produced from an FFTLog decomposition of the linear power spectrum.
+
+Requirements
+------------
+RedshiftBiasEFTwithFFT is written in C++ with standard ISO C++11. 
+
+Three libraries are required for compilation:
+- the GSL library <https://www.gnu.org/software/gsl/>
+- the FFTW library <http://www.fftw.org/>
+- the Eigen library <http://eigen.tuxfamily.org/> 
+The code should be provided with the Eigen headers in the source: no installation should be required for the Eigen library.
+
+The loop calculation involves a discrete Fourier transformation routine from the FFTW library
+and the use of the Eigen library for efficient matrix / vector multiplication.
+
+The IR-resummation makes use of the FFTLog algorithm first written in Fortran by A. Hamilton: 
+<http://casa.colorado.edu/~ajsh/FFTLog/>, then translated in C by J. Carlson within the
+Copter library: <http://mwhite.berkeley.edu/Copter/>, which is released under the GNU General 
+Public License, see <https://www.gnu.org/licenses/gpl-3.0.en.html>. The files 'fftlog.h' and 
+'fftlog.cpp' are from the Copter library. 
+
+
+Compiling and running
+---------------------
+Adjust or include paths to the GSL and FFTW libraries in Makefile, and run 'make'.
+
+To run RedshiftBiasEFTwithFFT type:
+./RedshiftBiasEFT path/to/inifile
+
+An example inifile can be found in ./input/RedshiftBiasEFT.ini
+
+
+Outputs
+-------
+RedshiftBiasEFTwithFFT generates six files :
+'PowerSpectraLinear_lX.dat' and 'PowerSpectra1loop_lX.dat' with X = 0,2,4 being the multipoles.
+
+First line in the output files (with an '#' at the beginning) is the legend for the columns:
+# k[h/Mpc]    bi    ... 
+... which means that the first column is the k's for which the power spectra in the other column 
+are evaluated and 'bi' is the bias coefficients multiplying the power spectra in the corresponding
+column.
+
+
+References
+-----------
+A great amount of work went into the development of the theory and the first 
+computations. Therefore, we would be very grateful if the following set of 
+papers were to be cited if using this code.
+
+@article{Baumann:2010tm,
+      author         = "Baumann, Daniel and Nicolis, Alberto and Senatore,
+                        Leonardo and Zaldarriaga, Matias",
+      title          = "{Cosmological Non-Linearities as an Effective Fluid}",
+      journal        = "JCAP",
+      volume         = "1207",
+      year           = "2012",
+      pages          = "051",
+      doi            = "10.1088/1475-7516/2012/07/051",
+      eprint         = "1004.2488",
+      archivePrefix  = "arXiv",
+      primaryClass   = "astro-ph.CO",
+      SLACcitation   = "%%CITATION = ARXIV:1004.2488;%%"
+}
+
+@article{Carrasco:2012cv,
+      author         = "Carrasco, John Joseph M. and Hertzberg, Mark P. and
+                        Senatore, Leonardo",
+      title          = "{The Effective Field Theory of Cosmological Large Scale
+                        Structures}",
+      journal        = "JHEP",
+      volume         = "09",
+      year           = "2012",
+      pages          = "082",
+      doi            = "10.1007/JHEP09(2012)082",
+      eprint         = "1206.2926",
+      archivePrefix  = "arXiv",
+      primaryClass   = "astro-ph.CO",
+      SLACcitation   = "%%CITATION = ARXIV:1206.2926;%%"
+}
+
+@article{Senatore:2014via,
+      author         = "Senatore, Leonardo and Zaldarriaga, Matias",
+      title          = "{The IR-resummed Effective Field Theory of Large Scale
+                        Structures}",
+      journal        = "JCAP",
+      volume         = "1502",
+      year           = "2015",
+      number         = "02",
+      pages          = "013",
+      doi            = "10.1088/1475-7516/2015/02/013",
+      eprint         = "1404.5954",
+      archivePrefix  = "arXiv",
+      primaryClass   = "astro-ph.CO",
+      SLACcitation   = "%%CITATION = ARXIV:1404.5954;%%"
+}
+
+@article{Senatore:2014eva,
+      author         = "Senatore, Leonardo",
+      title          = "{Bias in the Effective Field Theory of Large Scale
+                        Structures}",
+      journal        = "JCAP",
+      volume         = "1511",
+      year           = "2015",
+      number         = "11",
+      pages          = "007",
+      doi            = "10.1088/1475-7516/2015/11/007",
+      eprint         = "1406.7843",
+      archivePrefix  = "arXiv",
+      primaryClass   = "astro-ph.CO",
+      SLACcitation   = "%%CITATION = ARXIV:1406.7843;%%"
+}
+
+@article{Senatore:2014vja,
+      author         = "Senatore, Leonardo and Zaldarriaga, Matias",
+      title          = "{Redshift Space Distortions in the Effective Field Theory
+                        of Large Scale Structures}",
+      year           = "2014",
+      eprint         = "1409.1225",
+      archivePrefix  = "arXiv",
+      primaryClass   = "astro-ph.CO",
+      SLACcitation   = "%%CITATION = ARXIV:1409.1225;%%"
+}
+
+@article{Lewandowski:2015ziq,
+      author         = "Lewandowski, Matthew and Senatore, Leonardo and Prada,
+                        Francisco and Zhao, Cheng and Chuang, Chia-Hsun",
+      title          = "{On the EFT of Large Scale Structures in Redshift Space}",
+      year           = "2015",
+      eprint         = "1512.06831",
+      archivePrefix  = "arXiv",
+      primaryClass   = "astro-ph.CO",
+      SLACcitation   = "%%CITATION = ARXIV:1512.06831;%%"
+}
+
+@article{Perko:2016puo,
+      author         = "Perko, Ashley and Senatore, Leonardo and Jennings, Elise
+                        and Wechsler, Risa H.",
+      title          = "{Biased Tracers in Redshift Space in the EFT of
+                        Large-Scale Structure}",
+      year           = "2016",
+      eprint         = "1610.09321",
+      archivePrefix  = "arXiv",
+      primaryClass   = "astro-ph.CO",
+      SLACcitation   = "%%CITATION = ARXIV:1610.09321;%%"
+}
+
+@article{Simonovic:2017mhp,
+      author         = "Simonović, Marko and Baldauf, Tobias and Zaldarriaga,
+                        Matias and Carrasco, John Joseph and Kollmeier, Juna A.",
+      title          = "{Cosmological perturbation theory using the FFTLog:
+                        formalism and connection to QFT loop integrals}",
+      journal        = "JCAP",
+      volume         = "1804",
+      year           = "2018",
+      number         = "04",
+      pages          = "030",
+      doi            = "10.1088/1475-7516/2018/04/030",
+      eprint         = "1708.08130",
+      archivePrefix  = "arXiv",
+      primaryClass   = "astro-ph.CO",
+      SLACcitation   = "%%CITATION = ARXIV:1708.08130;%%"
+}
+
+
+The code uses the following pre-existing codes:
+
+@Article{FFTW05,
+  author = 	 {Frigo, Matteo and Johnson, Steven~G.},
+  title = 	 {The Design and Implementation of {FFTW3}},
+  journal = 	 {Proceedings of the IEEE},
+  year = 	 2005,
+  volume =	 93,
+  number =	 2,
+  pages =	 {216--231},
+  note =	 {Special issue on ``Program Generation, Optimization, and Platform Adaptation''}
+}
+
+@article{Hamilton:1999uv,
+      author         = "Hamilton, A. J. S.",
+      title          = "{Uncorrelated modes of the nonlinear power spectrum}",
+      journal        = "Mon. Not. Roy. Astron. Soc.",
+      volume         = "312",
+      year           = "2000",
+      pages          = "257-284",
+      doi            = "10.1046/j.1365-8711.2000.03071.x",
+      eprint         = "astro-ph/9905191",
+      archivePrefix  = "arXiv",
+      primaryClass   = "astro-ph",
+      SLACcitation   = "%%CITATION = ASTRO-PH/9905191;%%"
+}
+
+@MISC{eigenweb,
+  author = {Ga\"{e}l Guennebaud and Beno\^{i}t Jacob and others},
+  title = {Eigen v3},
+  howpublished = {http://eigen.tuxfamily.org},
+  year = {2010}
+ }
+
+
