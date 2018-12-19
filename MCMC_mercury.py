@@ -73,7 +73,7 @@ ORAD = (1.+ NUR*7./8.*(4./11.)**(4./3.))*OG
 ZD = 1059.94
 SIGMA_ZD = 0.30 # rd(zd+sigma)-dr(zd-sigma) < 0.2 sigma_rd: we take zd to be a delta function
 # Sound horizon at decoupling [Mpc] (PLANCK 2015 TT,TE,EE+lowP+lensing (Table 4)):
-#RD = 147.09 # Planck 2018
+RD = 147.09 # Planck 2018
 
 #RD = 147.65272227429142 # Challenge
 #RD = 148.012 # Patchy
@@ -764,7 +764,7 @@ if __name__ ==  "__main__":
             Covred = Full_Cov[indexkred[:,None],indexkred]
 
             Cinv = np.linalg.inv(Covred)
-            '''
+            
             #Window function shouldn't be applied for full challenge box
             if 'Challenge' in simtype and 'Quarter' not in simtype:
                 kpred = xdata[:len(xdata)/3]
@@ -786,7 +786,7 @@ if __name__ ==  "__main__":
             
             chi2data = np.dot(ydata,np.dot(Cinv,ydata))
             Cinvwdata = np.dot(ydata, Cinvw)     
-    
+            '''
     #################################
     ## Setting up the fit ###########
     #################################    

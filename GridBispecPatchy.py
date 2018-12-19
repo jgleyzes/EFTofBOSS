@@ -36,7 +36,7 @@ rank = comm.Get_rank()
 SCRATCH_PATH = '/exports/pierre/EFTofBOSS/'
 
 # Data paths
-OUTPATH = opa.abspath('/exports/pierre/EFTofBOSS/output/')
+OUTPATH = opa.abspath('/exports/pierre/EFTofBOSS/output_challenge/')
 #print(OUTPATH)
 if not opa.isdir(OUTPATH): raise Exception(OUTPATH + ' not there!')
 
@@ -64,8 +64,8 @@ simtype = 'LightConeHector'
 #simtype = 'PTchallengeCMASS2'
 series_cosmo = dfcosmo.loc[simtype] 
 
-gridname = 'LightConeHectorPatchyWideHDvFFT_IR06'
-#gridname = 'LightConeHectorDataHDvFFT_IR06'
+#gridname = 'LightConeHectorPatchyWideHDvFFT_IR06'
+gridname = 'LightConeHectorDataHDvFFT_IR06'
 
 
 ocfid =  series_cosmo.loc['Omega_m']*series_cosmo.loc['h']**2-series_cosmo.loc['omega_b']
@@ -85,7 +85,7 @@ nsfid = dfcosmo.loc[simtype,'ns']
 ###  Grid ##############################
 ###########################################
 
-'''
+
 ### GRID FOR DATA CONFIG
 lnAsmin=2.0
 lnAsmax=3.3
@@ -111,7 +111,7 @@ hmax=0.9
 nbinsAs=70
 nbinsOm=48 
 nbinsh=72 
-
+'''
 
 thetatab=[]
 for i in range(0,nbinsAs): #creates a list of couple (alphaT,alphaB) to use the parallelisation
