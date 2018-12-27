@@ -39,7 +39,7 @@ import WindowFunctionFourier
 # Data paths
 INPATH = opa.abspath(opa.join(THIS_PATH,'input'))
 #INPATH2 = opa.abspath('/scratch/users/kokron/')
-OUTPATH = opa.abspath(opa.join(THIS_PATH,'output')) 
+OUTPATH = opa.abspath(opa.join(THIS_PATH,'output_fast')) 
 #print(OUTPATH)
 if not opa.isdir(OUTPATH): raise Exception(OUTPATH + ' not there!')
 
@@ -73,11 +73,7 @@ ORAD = (1.+ NUR*7./8.*(4./11.)**(4./3.))*OG
 ZD = 1059.94
 SIGMA_ZD = 0.30 # rd(zd+sigma)-dr(zd-sigma) < 0.2 sigma_rd: we take zd to be a delta function
 # Sound horizon at decoupling [Mpc] (PLANCK 2015 TT,TE,EE+lowP+lensing (Table 4)):
-RD = 147.09 # Planck 2018
-
-#RD = 147.65272227429142 # Challenge
-#RD = 148.012 # Patchy
-
+RD = 147.09
 SIGMA_RD = 0.26
 
 # Baryon-photon decoupling redshift (PLANCK 2015 TT,TE,EE+lowP+lensing (Table 4)):
@@ -98,7 +94,7 @@ def rs(Om,h,f_fid):
 
 def embed_Pi(ploop, masktriangle):
     #Embed the Pi into a bigger shape that has appropriate prepadding and postpadding so the bisp term can be easily added on
-    #Dimension of Pi is [nterms, 3hen, 100]
+    #Dimension of Pi is [nterms, 3, 100]
     #return with dimension [nterms+1, 4, 100+nkbisp]
     nkbisp = sum(masktriangle)
     nkp = ploop.shape[1]
@@ -203,15 +199,8 @@ def get_grid(gridname,nbinsAs=100,nbinsOm =48,nbinsh=48,withBisp=False):
     interpolations = [Plininterp,Ploopinterp]
 
     if withBisp:
-        thetatab2 = np.load(opa.abspath(opa.join(INPATH,'GridsEFT/TablecoordconLightConeHectorwideh.npy')))
-        theta3D2 = thetatab2.reshape((100,50,50,3))
-
-        lnAstab2 = theta3D2[:,0,0,0]
-        Omtab2 = theta3D2[0,:,0,1]
-        htab2 = theta3D2[0,0,:,2]
-
-        TableBisp = np.load(opa.abspath(opa.join(INPATH,'GridsEFT/TableBispconLightConeHectorwidehNGC.npy')))
-        Bispinterp = scipy.interpolate.RegularGridInterpolator((lnAstab2,Omtab2,htab2),TableBisp.reshape((100,50,50,TableBisp.shape[-2],TableBisp.shape[-1])),bounds_error=False)
+        TableBisp = np.load(opa.abspath(opa.join(INPATH,'GridsEFT/TableBisp%s.npy'%gridname)))
+        Bispinterp = scipy.interpolate.RegularGridInterpolator((lnAstab,Omtab,htab),TableBisp.reshape((nbinsAs,nbinsOm,nbinsh,TableBisp.shape[-2],TableBisp.shape[-1])))
         #interpolations = [Plininterp,Ploopinterp,Sigsqinterp,Bispinterp]
         interpolations = [Plininterp,Ploopinterp,Bispinterp]
 
@@ -355,7 +344,7 @@ def lnprior(theta, free_para, fix_para,bounds):
         else:            
             return 0.
     else:
-        return -np.inf
+     return -np.inf
 
 
 def lnlike(theta,  kpred,chi2data,Cinvwdata,Cinvww, free_para, fix_para,bounds,Om_fid, sigma_prior = 100, marg_gaussian=False,binning=False,TableNkmu=None):
@@ -669,8 +658,7 @@ if __name__ ==  "__main__":
         runtype += 'withBispkmax%s'%kmaxbisp
         Full_Cov = np.loadtxt(opa.join(INPATH,'Covariance/Cov%s%s_Bisp.dat'%(simtype,ZONE)))   
         Q1,Q2,Q3,Bispdata = np.loadtxt(opa.join(INPATH,'DataSims/Bispred_LightConeHector_%s_%s.dat'%(ZONE,boxnumber))).T
-        #KMAXBISP = 0.12
-        KMAXBISP = 1
+        KMAXBISP = 0.15
         R1,R2,R3 = Q1[(Q1<KMAXBISP)&(Q2<KMAXBISP)&(Q3<KMAXBISP)], Q2[(Q1<KMAXBISP)&(Q2<KMAXBISP)&(Q3<KMAXBISP)], Q3[(Q1<KMAXBISP)&(Q2<KMAXBISP)&(Q3<KMAXBISP)]
         masktriangle = (Q1>=kminbisp)&(Q1<=kmaxbisp)&(Q1<=Q2+Q3)&(Q1>=abs(Q2-Q3))&(Q2>=kminbisp)&(Q2<=kmaxbisp)&(Q3>=kminbisp)&(Q3<=kmaxbisp)
         masktriangle2 = (R1>=kminbisp)&(R1<=kmaxbisp)&(R1<=R2+R3)&(R1>=abs(R2-R3))&(R2>=kminbisp)&(R2<=kmaxbisp)&(R3>=kminbisp)&(R3<=kmaxbisp)
@@ -783,10 +771,10 @@ if __name__ ==  "__main__":
             Cinvw = Cinv
             Cinvww = Cinv
             ####################################################################################################
-            
+            '''
             chi2data = np.dot(ydata,np.dot(Cinv,ydata))
             Cinvwdata = np.dot(ydata, Cinvw)     
-            '''
+    
     #################################
     ## Setting up the fit ###########
     #################################    
@@ -859,7 +847,7 @@ if __name__ ==  "__main__":
     t0 = time.time()
     temperature  =  1.
     #minlength  =  6000
-    minlength = 1000
+    minlength = 2000
     ichaincheck  =  50
     ithin  =  1
         

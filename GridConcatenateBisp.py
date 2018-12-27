@@ -8,9 +8,9 @@ import numpy as np
 halfnum=0
 run=0
 
-gridname = 'LightConeHectorPatchyWideHDvFFT_IR06'
+gridname = 'LightConeHectorDataHDvFFT_IR06'
 
-tableBisptest=np.load('/exports/pierre/EFTofBOSS/output/textfiles/TableBispSC%shalf%srun%sstep0.npy'%(gridname,halfnum,250*run))
+tableBisptest=np.load('/exports/pierre/EFTofBOSS/output_challenge/textfiles/TableBispSC%shalf%srun%sstep0.npy'%(gridname,halfnum,250*run))
 
 #Ntot=70*48*72
 Ntot = 100*48*48
@@ -22,7 +22,7 @@ print("ready")
 for nrank in range(240):
     for i in range(Ntot/240):
         
-        tableBisp[i+nrank*Ntot/240]=np.load('/exports/pierre/EFTofBOSS/output/textfiles/TableBispSC%shalf%srun%sstep%s.npy'%(gridname,halfnum,nrank,i))
+        tableBisp[i+nrank*Ntot/240]=np.load('/exports/pierre/EFTofBOSS/output_challenge/textfiles/TableBispSC%shalf%srun%sstep%s.npy'%(gridname,halfnum,nrank,i))
   
     print("Finished nrank of ", nrank)
 

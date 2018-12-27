@@ -11,9 +11,9 @@ for prior in 20
 do
 for marg in 1
 do
-for kmax in 0.25
+for kmax in 0.3
 do
-for kmaxbisp in 0.06 0.08 0.1
+for kmaxbisp in 0.08 0.1
 do
 for number in 1 2
 do
@@ -33,9 +33,9 @@ for prior in 20
 do
 for marg in 1
 do
-for kmax in 0.25
+for kmax in 0.3
 do
-for kmaxbisp in 0.06 0.08 0.1
+for kmaxbisp in 0.08 0.1
 do
 for number in 3 4
 do
@@ -57,9 +57,9 @@ for prior in 20
 do
 for marg in 1
 do
-for kmax in 0.25
+for kmax in 0.3
 do
-for kmaxbisp in 0.06 0.08 0.1
+for kmaxbisp in 0.08 0.1
 do
 for number in 5 6
 do
@@ -83,9 +83,9 @@ for prior in 20
 do
 for marg in 1
 do
-for kmax in 0.25
+for kmax in 0.3
 do
-for kmaxbisp in 0.06 0.08 0.1
+for kmaxbisp in 0.08 0.1
 do
 for number in 7 8
 do
@@ -110,9 +110,9 @@ for prior in 20
 do
 for marg in 1
 do
-for kmax in 0.25
+for kmax in 0.3
 do
-for kmaxbisp in 0.06 0.08 0.1
+for kmaxbisp in 0.08 0.1
 do
 for number in 9 10
 do
@@ -135,9 +135,9 @@ for prior in 20
 do
 for marg in 1
 do
-for kmax in 0.25
+for kmax in 0.3
 do
-for kmaxbisp in 0.06 0.08 0.1
+for kmaxbisp in 0.08 0.1
 do
 for number in 1 2
 do
@@ -160,9 +160,9 @@ for prior in 20
 do
 for marg in 1
 do
-for kmax in 0.25
+for kmax in 0.3
 do
-for kmaxbisp in 0.06 0.08 0.1
+for kmaxbisp in 0.08 0.1
 do
 for number in 3 4
 do
@@ -185,9 +185,9 @@ for prior in 20
 do
 for marg in 1
 do
-for kmax in 0.25
+for kmax in 0.3
 do
-for kmaxbisp in 0.06 0.08 0.1
+for kmaxbisp in 0.08 0.1
 do
 for number in 5 6
 do
@@ -210,9 +210,9 @@ for prior in 20
 do
 for marg in 1
 do
-for kmax in 0.25
+for kmax in 0.3
 do
-for kmaxbisp in 0.06 0.08 0.1
+for kmaxbisp in 0.08 0.1
 do
 for number in 7 8
 do
@@ -235,9 +235,9 @@ for prior in 20
 do
 for marg in 1
 do
-for kmax in 0.25
+for kmax in 0.3
 do
-for kmaxbisp in 0.06 0.08 0.1
+for kmaxbisp in 0.08 0.1
 do
 for number in 9 10
 do

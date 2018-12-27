@@ -202,7 +202,7 @@ def get_grid(gridname,nbinsAs=100,nbinsOm =48,nbinsh=48,withBisp=False):
     interpolations = [Plininterp,Ploopinterp]
     if withBisp:
         TableBisp = np.load(opa.abspath(opa.join(INPATH,'GridsEFT/TableBisp%s.npy'%gridname)))
-        Bispinterp = scipy.interpolate.RegularGridInterpolator((lnAstab,Omtab,htab),TableBisp.reshape((nbinsAs,nbinsOm,nbinsh,TableBisp.shape[-2],TableBisp.shape[-1]))/(4*np.pi))
+        Bispinterp = scipy.interpolate.RegularGridInterpolator((lnAstab,Omtab,htab),TableBisp.reshape((nbinsAs,nbinsOm,nbinsh,TableBisp.shape[-2],TableBisp.shape[-1])))
         #interpolations = [Plininterp,Ploopinterp,Sigsqinterp,Bispinterp]
         interpolations = [Plininterp,Ploopinterp,Bispinterp]
 
@@ -832,7 +832,7 @@ if __name__ ==  "__main__":
         runtype += 'withBispkmax%s'%kmaxbisp
         Full_Cov = np.loadtxt(opa.join(INPATH,'Covariance/Cov%s%s_Bisp.dat'%(simtype,ZONE)))   
         Q1,Q2,Q3,Bispdata = np.loadtxt(opa.join(INPATH,'DataSims/Bispred_LightConeHector_%s_%s.dat'%(ZONE,boxnumber))).T
-        KMAXBISP = 0.12
+        KMAXBISP = 0.15
         R1,R2,R3 = Q1[(Q1<KMAXBISP)&(Q2<KMAXBISP)&(Q3<KMAXBISP)], Q2[(Q1<KMAXBISP)&(Q2<KMAXBISP)&(Q3<KMAXBISP)], Q3[(Q1<KMAXBISP)&(Q2<KMAXBISP)&(Q3<KMAXBISP)]
         masktriangle = (Q1>=kminbisp)&(Q1<=kmaxbisp)&(Q1<=Q2+Q3)&(Q1>=abs(Q2-Q3))&(Q2>=kminbisp)&(Q2<=kmaxbisp)&(Q3>=kminbisp)&(Q3<=kmaxbisp)
         masktriangle2 = (R1>=kminbisp)&(R1<=kmaxbisp)&(R1<=R2+R3)&(R1>=abs(R2-R3))&(R2>=kminbisp)&(R2<=kmaxbisp)&(R3>=kminbisp)&(R3<=kmaxbisp)
