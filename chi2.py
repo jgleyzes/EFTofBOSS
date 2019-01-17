@@ -768,7 +768,7 @@ if __name__ ==  "__main__":
 
     kmin = 0.01
     #kminbisp = kmin
-    kminbisp = 0.01
+    kminbisp = 0.04
     
     kmaxbisp = float(sys.argv[6])
     if kmaxbisp > 0:
@@ -1132,6 +1132,6 @@ if __name__ ==  "__main__":
     PstochX_extrap = scipy.interpolate.interp1d(kfullred,PstochXAP,axis=-1,bounds_error=False,fill_value='extrapolate')(xdata[:len(xdata)/3])
     stochX = PstochX_extrap.reshape(-1)
 
-    np.savetxt(opa.join(OUTPATH,"fit%sbox_%skmax_%s.txt")%(runtype,boxnumber,kmax), zip(xdata, ydata, modelX, np.diag(Covred), loopX, linX, stochX, loopX1, loopX2))
-    np.savetxt(opa.join(OUTPATH,"bestfit%sbox_%skmax_%s.txt")%(runtype,boxnumber,kmax), [lnAs,Om,h,b1,b2,b3,b4,b5,b6,b7,b8,b9,b10,b11])
-    np.savetxt(opa.join(OUTPATH,"minchi2%sbox_%skmax_%s.txt")%(runtype,boxnumber,kmax),[minchi22,dof2])
+    np.savetxt(opa.join(OUTPATH,"fit%sQuarterbox_%skmax_%s.txt")%(runtype,boxnumber,kmax), zip(xdata, ydata, modelX, np.diag(Covred), loopX, linX, stochX, loopX1, loopX2))
+    np.savetxt(opa.join(OUTPATH,"bestfit%sQuarterbox_%skmax_%s.txt")%(runtype,boxnumber,kmax), [lnAs,Om,h,b1,b2,b3,b4,b5,b6,b7,b8,b9,b10,b11])
+    np.savetxt(opa.join(OUTPATH,"minchi2%sQuarterbox_%skmax_%s.txt")%(runtype,boxnumber,kmax),[minchi22,dof2])

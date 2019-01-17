@@ -14,9 +14,12 @@ from numpy.linalg import inv
 import scipy.optimize as op
 import os.path as opa
 import scipy.interpolate as sp
+import scipy.special as ss
 import sys
 import os
 import pandas as pd
+import zbeft
+import camb
 os.chdir('/'+os.path.dirname(__file__))
 
 from mpi4py import MPI
@@ -41,19 +44,6 @@ if not opa.isdir(OUTPATH): raise Exception(OUTPATH + ' not there!')
 # The CLASS Boltzmann code installation location
 CLASSPATH = opa.abspath(opa.join(SCRATCH_PATH, 'class/')) # Expects the CLASS code compiled here!!!
 
-# How to find the EFT model files and tools
-EFT_PATH = opa.abspath(opa.join(SCRATCH_PATH,'RedshiftBiasEFTwithFFT/')) # Expects the EFT code compiled here!!!
-#EFT_PATH = opa.abspath(opa.join(SCRATCH_PATH,'RedshiftBiasEFT_C/'))
-
-
-if opa.isdir(EFT_PATH):
-    import sys
-    if EFT_PATH not in sys.path: 
-        sys.path.append(EFT_PATH)
-    import zbeft
-else:
-    raise Exception('Module not found at ' + EFT_PATH)
-
 
 # COSMOLOGICAL GLOBALS: fiducial model (should match input sim data!)
 dfcosmo = pd.read_csv(opa.join(SCRATCH_PATH,'input/DataFrameCosmosims.csv'),index_col=0)
@@ -70,8 +60,8 @@ obfid = series_cosmo.loc['omega_b']
 fb = obfid/ocfid
 
 Omega_mfid = dfcosmo.loc[simtype,'Omega_m']
-#h_TRUE = dfcosmo.loc[simtype,'h']
-#lnAs_TRUE = dfcosmo.loc[simtype,'lnAs']
+h_TRUE = dfcosmo.loc[simtype,'h']
+lnAs_TRUE = dfcosmo.loc[simtype,'lnAs']
 z_pk = dfcosmo.loc[simtype,'z_pk']
 nsfid = dfcosmo.loc[simtype,'ns']
 
@@ -93,7 +83,7 @@ def get_EFT_pars(lnAs, Om, h):
 
     # preparing the config dictionary from the globals on top (this should be in a config file!)
     Outpath=opa.abspath(opa.join(OUTPATH, 'intermediary/'))
-    zbeftpath=EFT_PATH
+    zbeftpath=''#EFT_PATH
     classpath=CLASSPATH
         
     keys = ['b1','b2','b3','b4','b5','b6','b7','b8','b9','b10','DM','kren',
@@ -119,51 +109,73 @@ def sigma8(lnAs, Om, h):
     pars = get_EFT_pars(lnAs, Om, h)
     # Runs Pierre's code and save output to folder in path.
     path = zbeft.run_zbEFTClassonly(pars)
+
+    kclass,pkclass=(np.loadtxt(opa.abspath(opa.join(path,'class_pk.dat')))).T
     
-    Pkclass=(np.loadtxt(opa.abspath(opa.join(path,'class_pk.dat')))).T
-    kclass,pkclass=Pkclass
+    #s8 = 3./8./np.pi * ( 0.5 * np.trapz( pkclass * (ss.spherical_jn(1,8*kclass))**2,dx=kclass[1:]-kclass[:-1]) )**0.5
+    
     wRtab=np.array(map(lambda x: wR(8*x),kclass))
 
     s8=(1./(2*np.pi**2)*np.trapz(kclass**2*pkclass*wRtab**2,dx=kclass[1:]-kclass[:-1]))**0.5
 
     return s8
 
+def sigma8camb(lnAs, Om, h):
+    omega_m=Om*h**2
+    pars = camb.CAMBparams()
+    pars.set_cosmology(H0=h*100, ombh2=omega_m*fb/(1+fb), omch2=omega_m/(1+fb))
+    pars.InitPower.set_params(As = np.exp(lnAs)*1e-10, ns=0.9649)
+    #pars.YHe = 0.2454
+    #pars.set_accuracy(AccuracyBoost=1)
+    pars.set_matter_power(redshifts=[z_pk], kmax=2)
+    results = camb.get_results(pars)
+    return results.get_sigma8()
 
 ###########################################
 ###  Data  ###########################
 ###########################################
 
 kmax=0.25
-run = OUTPATH2 + '/samplerchainLightConeHectorNGCprior20.0gaussMarg'
+#Bisp=''
+Bisp = 'withBispkmax0.1'
+Planck = ''
+#Planck = 'withPlanck'
+#run = OUTPATH2 + '/samplerchainChallengeAprior20.0'+Bisp+Planck+'gaussMarg'
+run = OUTPATH2 + '/samplerchainLightConeHectorNGCprior20.0'+Bisp+Planck+'gaussMarg'
+#boxnumber = 'A'
 boxnumber = 'data'
-Bisp = ''
+#boxnumber = '2'
+step = 5
 
 a=1./(1.+z_pk)
 
 def getchain():
-    samplerchaintab0 = np.array(np.load(run+"box_%skmax_%s%srun_0.npy"%(boxnumber,kmax,Bisp)))
-    samplerchaintab1 = np.array(np.load(run+"box_%skmax_%s%srun_1.npy"%(boxnumber,kmax,Bisp)))
-    samplerchaintab2 = np.array(np.load(run+"box_%skmax_%s%srun_2.npy"%(boxnumber,kmax,Bisp)))
-    samplerchaintab3 = np.array(np.load(run+"box_%skmax_%s%srun_3.npy"%(boxnumber,kmax,Bisp)))
+    samplerchaintab0 = np.array(np.load(run+"box_%skmax_%srun_0.npy"%(boxnumber,kmax)))
+    samplerchaintab1 = np.array(np.load(run+"box_%skmax_%srun_1.npy"%(boxnumber,kmax)))
+    samplerchaintab2 = np.array(np.load(run+"box_%skmax_%srun_2.npy"%(boxnumber,kmax)))
+    samplerchaintab3 = np.array(np.load(run+"box_%skmax_%srun_3.npy"%(boxnumber,kmax)))
 
     nparam = samplerchaintab3.shape[-1]
     
-    samplestot = np.array([samplerchaintab0[:,:,:].reshape((-1,nparam)),samplerchaintab1[:,:,:].reshape((-1,nparam)),samplerchaintab2[:,:,:].reshape((-1,nparam)),samplerchaintab3[:,:,:].reshape((-1,nparam))])
-    samples = (samplestot[:,samplestot.shape[1]/2::10,:]).reshape((-1,nparam))
+    samplestot = np.array([samplerchaintab0[:,samplerchaintab0.shape[1]/2::step,:].reshape((-1,nparam)),samplerchaintab1[:,samplerchaintab1.shape[1]/2::step,:].reshape((-1,nparam)),samplerchaintab2[:,samplerchaintab2.shape[1]/2::step,:].reshape((-1,nparam)),samplerchaintab3[:,samplerchaintab3.shape[1]/2::step,:].reshape((-1,nparam))])
+    samples = (samplestot[:,:,:]).reshape((-1,nparam))
 
-    print (np.shape(samples))
+    #print (np.shape(samples))
 
     return samples
 
 def fsigma8chain(chain, nrank):
-    fs8chain=np.zeros((chain.shape[0],5))
+    fs8chain=np.zeros((chain.shape[0],6))
     i=0
     for theta in chain:
-        print (theta)
-        lnAs,Om,h,b1,b2,b4=theta
-        fs8chain[i,:]=np.array([fN(Om,a), sigma8(lnAs,Om,h), b1, b2, b4])
+        #print (theta)
+        if 'withBisp' in Bisp:
+            lnAs,Om,h,b1,b2,b4,b8=theta
+        else:    
+            lnAs,Om,h,b1,b2,b4=theta
+        fs8chain[i,:]=np.array([fN(Om,a), sigma8camb(lnAs,Om,h), h, b1, b2, b4])
         i=i+1
-    np.save(OUTPATH+"/textfiles/fsigma8chain%srank_%s.npy"%(Bisp,nrank), fs8chain)
+    np.save(OUTPATH+"/textfiles/fsigma8chain%s%srank_%s.npy"%(Bisp,Planck,nrank), fs8chain)
 
 
 samples=getchain()
@@ -172,4 +184,3 @@ sizered=samples.shape[0]/ncore
 arrayred=samples[rank*sizered:(rank+1)*sizered]
 
 fsigma8samples=fsigma8chain(arrayred, rank)
-

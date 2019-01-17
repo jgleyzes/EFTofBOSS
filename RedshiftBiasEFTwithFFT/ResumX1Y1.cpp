@@ -8,8 +8,8 @@
 #define MIN 0.0001
 #define MAX 1
 
-const double CutResum = 0.2 ;
-//const double CutResum = 0.7 ;
+//const double CutResum = 0.2 ;
+const double CutResum = 0.066 ;
 
 
 double X1 (const double & q, const InterpFunc & p) {

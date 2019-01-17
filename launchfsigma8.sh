@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#PBS -l nodes=10:ppn=12
+#PBS -l nodes=10:ppn=24
 #PBS -N COMPUTEFSIGMA8
 #PBS -o /home/pierre/log/
 #PBS -e /home/pierre/log/

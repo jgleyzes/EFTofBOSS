@@ -111,17 +111,17 @@ def get_Pi_for_marg(Ploop,kfull,b1,bisp=None):
 
     nk = len(kfull)
     Onel0 = np.array([np.ones(nk),np.zeros(nk),np.zeros(nk)])
-    kl0 = np.array([kfull,np.zeros(nk),np.zeros(nk)])
-    kl2 = np.array([np.zeros(nk),kfull,np.zeros(nk)])
+    #kl0 = np.array([kfull,np.zeros(nk),np.zeros(nk)])
+    #kl2 = np.array([np.zeros(nk),kfull,np.zeros(nk)])
 
     Pi = np.array([Ploop[:,3,:]+b1*Ploop[:,7,:],
              (Ploop[:,15,:]+b1*Ploop[:,12,:]) / knl**2,
              (Ploop[:,16,:]+b1*Ploop[:,13,:]) / km**2,
              (Ploop[:,17,:]+b1*Ploop[:,14,:]) / km**2,
-             Onel0 / nd,
-             # PCA b9 b10
-             (kl0**2 + kl2**2) / nd / km**2,
-             kl2**2 / nd / km**2])
+             Onel0 / nd]) 
+             #PCA b9 b10
+             #(kl0**2 + kl2**2) / nd / km**2,
+             #kl2**2 / nd / km**2])
 
     if withBisp:
         #b8 is not marginalized with bisp but b11 is.
@@ -132,9 +132,9 @@ def get_Pi_for_marg(Ploop,kfull,b1,bisp=None):
         Pi = np.array([Ploop[:,3,:]+b1*Ploop[:,7,:],
                  (Ploop[:,15,:]+b1*Ploop[:,12,:]) / knl**2,
                  (Ploop[:,16,:]+b1*Ploop[:,13,:]) / km**2,
-                 (Ploop[:,17,:]+b1*Ploop[:,14,:]) / km**2,
-                 (kl0**2 + kl2**2) / nd / km**2,
-                 kl2**2 / nd / km**2])
+                 (Ploop[:,17,:]+b1*Ploop[:,14,:]) / km**2])
+                 #(kl0**2 + kl2**2) / nd / km**2,
+                 #kl2**2 / nd / km**2])
     return Pi
     
     
@@ -164,7 +164,7 @@ def check_if_multipoles_k_array(setk):
             
 
 
-def get_grid(gridname,nbinsAs=100,nbins =48,withBisp=False):
+def get_grid(gridname,nbinsAs=100,nbinsOm =48,nbinsh=48,withBisp=False):
     
     """ Computes the power spectra given the b_i and the EFT power spectra
         Inputs
@@ -179,18 +179,6 @@ def get_grid(gridname,nbinsAs=100,nbins =48,withBisp=False):
     """
     
     thetatab = np.load(opa.abspath(opa.join(INPATH,'GridsEFT/Tablecoord%s.npy'%gridname)))
-
-    #theta3D = thetatab.reshape((nbinsAs,nbins,nbins,3))
-    '''
-    nbinsAs = 70
-    nbinsOm = 48
-    nbinsh = 72
-
-    '''
-    nbinsAs = 100
-    nbinsOm = 48
-    nbinsh = 48
-    
 
     theta3D = thetatab.reshape((nbinsAs,nbinsOm,nbinsh,3))
 
@@ -248,135 +236,6 @@ def computePS(cvals,datalin,dataloop,setkin,setkout,sigsq=0):
     """
     
     datalin0,datalin2,datalin4 = datalin
-    data0,data2,data4 = dataloop
-    b1,c2,b3,c4,b5,b6,b7,b8,b9,b10 = cvals#
-
-    # Add a PCA between b2 and b4 to disantangle the degeneracy:
-    b2 = 0.5 * (c2 + c4)
-    b4 = 0.5 * (c2 - c4)
-
-    
-    # the columns of the Ploop data files.
-    cvals = np.array([1,b1,b2,b3,b4,b1*b1,b1*b2,b1*b3,b1*b4,b2*b2,b2*b4,b4*b4, b1*b5/knl**2, b1*b6/km**2, b1*b7/km**2, b5/knl**2, b6/km**2 ,b7/km**2, b8*nd/km**2 ,b9*nd/km**2, b10*nd/km**2])
-    #cvals = np.array([1./(2.*np.pi),b1/(2.*np.pi),b2/(2.*np.pi),b3/(2.*np.pi),b4/(2.*np.pi),b1*b1/(2.*np.pi),b1*b2/(2.*np.pi),b1*b3/(2.*np.pi),b1*b4/(2.*np.pi),b2*b2/(2.*np.pi),b2*b4/(2.*np.pi),b4*b4*2/(4.+np.pi),b1*b5,b1*b6,b1*b7,b5,b6 ,b7,b8 ,b9,b10])
-    
-    # Check the k-arrays are in the right format (not concatenated for multipoles)
-    if check_if_multipoles_k_array(setkin):
-        setkin = setkin[:len(setkin)/3]
-    if check_if_multipoles_k_array(setkout):
-        setkout = setkin[:len(setkout)/3]
-         
-        
-    P0 = interp1d(setkin,np.dot(cvals,data0)+datalin0[0]+b1*datalin0[1]+b1*b1*datalin0[2] - 2*(-b1 + b2 + b4)**2*sigsq)(setkout)
-    P2 = interp1d(setkin,np.dot(cvals,data2)+datalin2[0]+b1*datalin2[1]+b1*b1*datalin2[2])(setkout)
-    P4 = interp1d(setkin,np.dot(cvals,data4)+datalin4[0]+b1*datalin4[1]+b1*b1*datalin4[2])(setkout)
-    
-    return np.array([P0,P2,P4])
-
-def computeLoop(cvals,datalin,dataloop,setkin,setkout,sigsq=0):
-    
-    datalin0,datalin2,datalin4 = datalin
-    data0,data2,data4 = dataloop
-    b1,c2,b3,c4,b5,b6,b7,b8,b9,b10 = cvals
-
-    # Add a PCA between b2 and b4 to disantangle the degeneracy:
-    b2 = 0.5 * (c2 + c4)
-    b4 = 0.5 * (c2 - c4)
-
-    # the columns of the Ploop data files.
-    cvals = np.array([1,b1,b2,b3,b4,b1*b1,b1*b2,b1*b3,b1*b4,b2*b2,b2*b4,b4*b4, b1*b5/knl**2, b1*b6/km**2, b1*b7/km**2, b5/knl**2, b6/km**2 ,b7/km**2, b8*nd/km**2 ,b9*nd/km**2, b10*nd/km**2])
-    #cvals = np.array([1./(2.*np.pi),b1/(2.*np.pi),b2/(2.*np.pi),b3/(2.*np.pi),b4/(2.*np.pi),b1*b1/(2.*np.pi),b1*b2/(2.*np.pi),b1*b3/(2.*np.pi),b1*b4/(2.*np.pi),b2*b2/(2.*np.pi),b2*b4/(2.*np.pi),b4*b4*2/(4.+np.pi),b1*b5,b1*b6,b1*b7,b5,b6 ,b7,b8 ,b9,b10])
-    
-    # Check the k-arrays are in the right format (not concatenated for multipoles)
-    if check_if_multipoles_k_array(setkin):
-        setkin = setkin[:len(setkin)/3]
-    if check_if_multipoles_k_array(setkout):
-        setkout = setkin[:len(setkout)/3]
-         
-        
-    P0 = interp1d(setkin,np.dot(cvals,data0))(setkout)
-    P2 = interp1d(setkin,np.dot(cvals,data2))(setkout)
-    P4 = interp1d(setkin,np.dot(cvals,data4))(setkout)
-
-
-def computeLoop2(cvals,datalin,dataloop,setkin,setkout,sigsq=0):
-    
-    datalin0,datalin2,datalin4 = datalin
-    data0,data2,data4 = dataloop
-    b1,c2,b3,c4,b5,b6,b7,b8,b9,b10 = cvals#
-
-    # Add a PCA between b2 and b4 to disantangle the degeneracy:
-    b2 = 0.5 * (c2 + c4)
-    b4 = 0.5 * (c2 - c4)
-
-    
-    # the columns of the Ploop data files.
-    cvals = np.array([0,b1,b2,b3,b4,b1*b1,b1*b2,b1*b3,b1*b4,b2*b2,b2*b4,b4*b4, b1*b5/knl**2, b1*b6/km**2, b1*b7/km**2, b5/knl**2, b6/km**2 ,b7/km**2, b8*nd/km**2 ,b9*nd/km**2, b10*nd/km**2])
-    #cvals = np.array([1./(2.*np.pi),b1/(2.*np.pi),b2/(2.*np.pi),b3/(2.*np.pi),b4/(2.*np.pi),b1*b1/(2.*np.pi),b1*b2/(2.*np.pi),b1*b3/(2.*np.pi),b1*b4/(2.*np.pi),b2*b2/(2.*np.pi),b2*b4/(2.*np.pi),b4*b4*2/(4.+np.pi),b1*b5,b1*b6,b1*b7,b5,b6 ,b7,b8 ,b9,b10])
-    
-    # Check the k-arrays are in the right format (not concatenated for multipoles)
-    if check_if_multipoles_k_array(setkin):
-        setkin = setkin[:len(setkin)/3]
-    if check_if_multipoles_k_array(setkout):
-        setkout = setkin[:len(setkout)/3]
-         
-        
-    P0 = interp1d(setkin,np.dot(cvals,data0)+datalin0[0]+b1*datalin0[1]+b1*b1*datalin0[2] - 2*(-b1 + b2 + b4)**2*sigsq)(setkout)
-    P2 = interp1d(setkin,np.dot(cvals,data2)+datalin2[0]+b1*datalin2[1]+b1*b1*datalin2[2])(setkout)
-    P4 = interp1d(setkin,np.dot(cvals,data4)+datalin4[0]+b1*datalin4[1]+b1*b1*datalin4[2])(setkout)
-    
-    return np.array([P0,P2,P4])
-
-
-def computeStoch(cvals,datalin,dataloop,setkin,setkout,sigsq=0):
-    
-    datalin0,datalin2,datalin4 = datalin
-    data0,data2,data4 = dataloop
-    b1,c2,b3,c4,b5,b6,b7,b8,b9,b10 = cvals
-
-    # Add a PCA between b2 and b4 to disantangle the degeneracy:
-    b2 = 0.5 * (c2 + c4)
-    b4 = 0.5 * (c2 - c4)
-
-    # the columns of the Ploop data files.
-    cvals = np.array([0,b1,b2,b3,b4,b1*b1,b1*b2,b1*b3,b1*b4,b2*b2,b2*b4,b4*b4, b1*b5/knl**2, b1*b6/km**2, b1*b7/km**2, b5/knl**2, b6/km**2 ,b7/km**2, b8*nd/km**2 ,b9*nd/km**2, b10*nd/km**2])
-    #cvals = np.array([1./(2.*np.pi),b1/(2.*np.pi),b2/(2.*np.pi),b3/(2.*np.pi),b4/(2.*np.pi),b1*b1/(2.*np.pi),b1*b2/(2.*np.pi),b1*b3/(2.*np.pi),b1*b4/(2.*np.pi),b2*b2/(2.*np.pi),b2*b4/(2.*np.pi),b4*b4*2/(4.+np.pi),b1*b5,b1*b6,b1*b7,b5,b6 ,b7,b8 ,b9,b10])
-    
-    # Check the k-arrays are in the right format (not concatenated for multipoles)
-    if check_if_multipoles_k_array(setkin):
-        setkin = setkin[:len(setkin)/3]
-    if check_if_multipoles_k_array(setkout):
-        setkout = setkin[:len(setkout)/3]
-         
-        
-    P0 = interp1d(setkin,np.dot(cvals,data0)+datalin0[0]+b1*datalin0[1]+b1*b1*datalin0[2] - 2*(-b1 + b2 + b4)**2*sigsq)(setkout)
-    P2 = interp1d(setkin,np.dot(cvals,data2)+datalin2[0]+b1*datalin2[1]+b1*b1*datalin2[2])(setkout)
-    P4 = interp1d(setkin,np.dot(cvals,data4)+datalin4[0]+b1*datalin4[1]+b1*b1*datalin4[2])(setkout)
-
-################################
-################################
-################################
-
-
-
-'''
-def computePS(cvals,datalin,dataloop,setkin,setkout,sigsq=0):
-    
-    """ Computes the power spectra given the b_i and the EFT power spectra
-        Inputs
-        ------
-        bvals : The values for the b_i
-        datalin : the linear power spectra from the EFT, with shape (multipoles, b_i, k)
-        dataloop : the loop power spectra from the EFT, with shape (multipoles, b_i, k)
-        setkin : the values of k from the input power spectra (must match datalin and dataloop)
-        setkout : the values of k for the output power spectra
-        sigsq: The sigma^2 that needs to be removed, corresponding to the constant piece of the loop terms
-        Outputs
-        ------
-        The power spectra multipoles, non-concatenated
-    """
-    
-    datalin0,datalin2,datalin4 = datalin
     data0,data2,data4 = dataloop[:,:18,:]
     b1,c2,b3,c4,b5,b6,b7,b8,b9,b10 = cvals
 
@@ -395,132 +254,13 @@ def computePS(cvals,datalin,dataloop,setkin,setkout,sigsq=0):
         setkout = setkin[:len(setkout)/3]
          
         
-    P0 = interp1d(setkin, np.dot(cvals,data0) + datalin0[0]+b1*datalin0[1]+b1*b1*datalin0[2])(setkout) + b8/nd + b9/nd/km**2 * setkout**2
-    P2 = interp1d(setkin, np.dot(cvals,data2) + datalin2[0]+b1*datalin2[1]+b1*b1*datalin2[2])(setkout) + b9/nd/km**2 * setkout**2 + b10/nd/km**2 * setkout**2
+    P0 = interp1d(setkin, np.dot(cvals,data0) + datalin0[0]+b1*datalin0[1]+b1*b1*datalin0[2] - 2*(-b1 + b2 + b4)**2*sigsq)(setkout) + b8/nd # + b9/nd/km**2 * setkout**2
+    P2 = interp1d(setkin, np.dot(cvals,data2) + datalin2[0]+b1*datalin2[1]+b1*b1*datalin2[2])(setkout) #+ b9/nd/km**2 * setkout**2 + b10/nd/km**2 * setkout**2
     P4 = interp1d(setkin, np.dot(cvals,data4) + datalin4[0]+b1*datalin4[1]+b1*b1*datalin4[2])(setkout)
     
     return np.array([P0,P2,P4])
-'''
 
 
-def computeLin(cvals,datalin,dataloop,setkin,setkout,sigsq=0):
-    
-    """ Computes the power spectra given the b_i and the EFT power spectra
-        Inputs
-        ------
-        bvals : The values for the b_i
-        datalin : the linear power spectra from the EFT, with shape (multipoles, b_i, k)
-        dataloop : the loop power spectra from the EFT, with shape (multipoles, b_i, k)
-        setkin : the values of k from the input power spectra (must match datalin and dataloop)
-        setkout : the values of k for the output power spectra
-        sigsq: The sigma^2 that needs to be removed, corresponding to the constant piece of the loop terms
-        Outputs
-        ------
-        The power spectra multipoles, non-concatenated
-    """
-    
-    datalin0,datalin2,datalin4 = datalin
-    data0,data2,data4 = dataloop
-    b1,c2,b3,c4,b5,b6,b7,b8,b9,b10 = cvals
-
-    # Add a PCA between b2 and b4 to disantangle the degeneracy:
-    b2 = 0.5 * (c2 + c4)
-    b4 = 0.5 * (c2 - c4)
-
-
-    # Check the k-arrays are in the right format (not concatenated for multipoles)
-    if check_if_multipoles_k_array(setkin):
-        setkin = setkin[:len(setkin)/3]
-    if check_if_multipoles_k_array(setkout):
-        setkout = setkin[:len(setkout)/3]
-         
-        
-    P0 = interp1d(setkin, datalin0[0]+b1*datalin0[1]+b1*b1*datalin0[2])(setkout)
-    P2 = interp1d(setkin, datalin2[0]+b1*datalin2[1]+b1*b1*datalin2[2])(setkout)
-    P4 = interp1d(setkin, datalin4[0]+b1*datalin4[1]+b1*b1*datalin4[2])(setkout)
-    
-    return np.array([P0,P2,P4])
-'''
-def computeLoop(cvals,datalin,dataloop,setkin,setkout,sigsq=0):
-    
-    datalin0,datalin2,datalin4 = datalin
-    data0,data2,data4 = dataloop[:,:18,:]
-    b1,c2,b3,c4,b5,b6,b7,b8,b9,b10 = cvals
-
-    # Add a PCA between b2 and b4 to disantangle the degeneracy:
-    b2 = 0.5 * (c2 + c4)
-    b4 = 0.5 * (c2 - c4)
-
-    cvals = np.array([1,b1,b2,b3,b4,b1*b1,b1*b2,b1*b3,b1*b4,b2*b2,b2*b4,b4*b4, b1*b5/knl**2, b1*b6/km**2, b1*b7/km**2, b5/knl**2, b6/km**2 ,b7/km**2])
-
-
-    # Check the k-arrays are in the right format (not concatenated for multipoles)
-    if check_if_multipoles_k_array(setkin):
-        setkin = setkin[:len(setkin)/3]
-    if check_if_multipoles_k_array(setkout):
-        setkout = setkin[:len(setkout)/3]
-         
-        
-    P0 = interp1d(setkin, np.dot(cvals,data0))(setkout) + b8/nd + b9/nd/km**2 * setkout**2
-    P2 = interp1d(setkin, np.dot(cvals,data2))(setkout) + b9/nd/km**2 * setkout**2 + b10/nd/km**2 * setkout**2
-    P4 = interp1d(setkin, np.dot(cvals,data4))(setkout)
-    
-    return np.array([P0,P2,P4])
-
-
-def computeLoop2(cvals,datalin,dataloop,setkin,setkout,sigsq=0):
-    
-    datalin0,datalin2,datalin4 = datalin
-    data0,data2,data4 = dataloop[:,:18,:]
-    b1,c2,b3,c4,b5,b6,b7,b8,b9,b10 = cvals
-
-    # Add a PCA between b2 and b4 to disantangle the degeneracy:
-    b2 = 0.5 * (c2 + c4)
-    b4 = 0.5 * (c2 - c4)
-
-    cvals = np.array([0,b1,b2,b3,b4,b1*b1,b1*b2,b1*b3,b1*b4,b2*b2,b2*b4,b4*b4, b1*b5/knl**2, b1*b6/km**2, b1*b7/km**2, b5/knl**2, b6/km**2 ,b7/km**2])
-
-
-    # Check the k-arrays are in the right format (not concatenated for multipoles)
-    if check_if_multipoles_k_array(setkin):
-        setkin = setkin[:len(setkin)/3]
-    if check_if_multipoles_k_array(setkout):
-        setkout = setkin[:len(setkout)/3]
-         
-        
-    P0 = interp1d(setkin, np.dot(cvals,data0))(setkout) + b8/nd + b9/nd/km**2 * setkout**2
-    P2 = interp1d(setkin, np.dot(cvals,data2))(setkout) + b9/nd/km**2 * setkout**2 + b10/nd/km**2 * setkout**2
-    P4 = interp1d(setkin, np.dot(cvals,data4))(setkout)
-    
-    return np.array([P0,P2,P4])
-
-def computeStoch(cvals,datalin,dataloop,setkin,setkout,sigsq=0):
-    
-    datalin0,datalin2,datalin4 = datalin
-    data0,data2,data4 = dataloop[:,:18,:]
-    b1,c2,b3,c4,b5,b6,b7,b8,b9,b10 = cvals
-
-    # Add a PCA between b2 and b4 to disantangle the degeneracy:
-    b2 = 0.5 * (c2 + c4)
-    b4 = 0.5 * (c2 - c4)
-
-    cvals = np.array([0,b1,b2,b3,b4,b1*b1,b1*b2,b1*b3,b1*b4,b2*b2,b2*b4,b4*b4, b1*b5/knl**2, b1*b6/km**2, b1*b7/km**2, b5/knl**2, b6/km**2 ,b7/km**2])
-
-
-    # Check the k-arrays are in the right format (not concatenated for multipoles)
-    if check_if_multipoles_k_array(setkin):
-        setkin = setkin[:len(setkin)/3]
-    if check_if_multipoles_k_array(setkout):
-        setkout = setkin[:len(setkout)/3]
-         
-        
-    P0 = interp1d(setkin, np.dot(cvals,data0))(setkout) + b8/nd + b9/nd/km**2 * setkout**2
-    P2 = interp1d(setkin, np.dot(cvals,data2))(setkout) + b9/nd/km**2 * setkout**2 + b10/nd/km**2 * setkout**2
-    P4 = interp1d(setkin, np.dot(cvals,data4))(setkout)
-    
-    return np.array([P0,P2,P4])
-'''
-  
 def gelman_rubin_convergence(withinchainvar, meanchain, n, Nchains, ndim):
     
     """ Calculate Gelman & Rubin diagnostic
@@ -800,17 +540,17 @@ def lnprob(theta, kpred,chi2data,Cinvwdata,Cinvww, free_para, fix_para,bounds,Om
     return dummy
 
 
-def lnlike2(theta,kpred,chi2data,Cinvwdata,Cinvww, free_para, fix_para, bounds,Om_fid, sigma_prior = 100, marg_gaussian=False,binning=False,TableNkmu=None):
-    
-    # Because we have a precomputed grid for the cosmological parameters, need to check that we are within that grid (defined in the prior).
-    if not np.isfinite(1):
+def lnlike2(theta,kpred,chi2data,Cinvwdata,Cinvww, free_para, fix_parachute, bounds,Om_fid, sigma_prior = 100, marg_gaussian=False,binning=False,TableNkmu=None):
+    if not np.isfinite(lnprior(theta, free_para, fix_para,bounds)):
         return -100000
     else :
-        #b3,b5,b6,b7,b8, b9,b10 = theta
-        b3,b5,b6,b7,b8 = theta
-        #b3,b5,b6,b7, b9,b10 = theta
-        #b8 = 0
-        lnAs,Om,h,b1,b2,b4,b9,b10= fix_para
+        if withBisp:
+            b3,b5,b6,b7,b11 = theta
+            lnAs,Om,h,b1,b2,b4,b8,b9,b10 = fix_parachute
+        else :
+            b3,b5,b6,b7,b8 = theta
+            lnAs,Om,h,b1,b2,b4,b9,b10 = fix_parachute
+
             
     # Import the power spectra interpolators on the grid
  
@@ -839,7 +579,9 @@ def lnlike2(theta,kpred,chi2data,Cinvwdata,Cinvww, free_para, fix_para, bounds,O
                 raise Exception('You want to use the bispectrum but forgot to use the full covariance for power spectrum + Bisp. Can be found in input/Covariance')
         
             TermsBisp = Bispinterp((lnAs,Om,h))
-            bval = np.array([1.,b1,b2,b4,b1*b11,b1**2,b1*b2,b1*b4,b1**3,b1**2*b2,b1**2*b4,b8**2])
+            c2 = 0.5 * (b2 + b4)
+            c4 = 0.5 * (b2 - b4)
+            bval = np.array([1.,b1,c2,c4,b1*b11/nd*0.01,b1**2,b1*c2,b1*c4,b1**3,b1**2*c2,b1**2*c4,b8**2/nd**2*0.0001])
             Bisp = 1.*np.dot(bval,TermsBisp[3:])
      
         # Compute the PS       
@@ -851,12 +593,6 @@ def lnlike2(theta,kpred,chi2data,Cinvwdata,Cinvww, free_para, fix_para, bounds,O
         #The AP parameters
         qperp,qpar = get_AP_param(Om,Om_fid)
         
-        if marg_gaussian:
-            if withBisp:
-                Pi_or = get_Pi_for_marg(Ploop,b1, TermsBisp[3:])
-            else: 
-                Pi_or = get_Pi_for_marg(Ploop,b1)
-        #print(Pi_or.shape, 'is original Pi shape')
     
         if not binning:
             PmodelAP = APpowerspectraNkmu.changetoAPnobinning(Pmodel,kfull,kfullred,qperp,qpar,nbinsmu=100)
@@ -868,44 +604,14 @@ def lnlike2(theta,kpred,chi2data,Cinvwdata,Cinvww, free_para, fix_para, bounds,O
                 raise Exception('You want to account for binning but forgot to provide a TableNkmu (array of shape (3,n)) obtained from the sims/ Can be found in input/TableNkmu')
             else : 
                 PmodelAP = APpowerspectraNkmu.changetoAPbinning(Pmodel,kfull,kfull,qperp,qpar,TableNkmu)
-                if marg_gaussian:
-                    Pi_AP = APpowerspectraNkmu.changetoAPbinningPi(Pi_or,kfull,kfull,qperp,qpar,TableNkmu)
         
         #print(kfullred.shape, kfull.shape, PmodelAP.shape)
         Pmodel_extrap = scipy.interpolate.interp1d(kfullred,PmodelAP,axis=-1,bounds_error=False,fill_value='extrapolate')(kpred)
         modelX = Pmodel_extrap.reshape(-1)
         if withBisp:
-            modelX = np.concatenate([modelX, Bisp[masktriangle]])
-        if marg_gaussian:
-            Pi_extrap = (scipy.interpolate.interp1d(kfullred,Pi_AP,axis=-1,bounds_error=False,fill_value='extrapolate')(kpred)).reshape((Pi_AP.shape[0],-1))
-            Pi_tot = 1.*Pi_extrap
-            #print(Pi_tot.shape, ' is Pi total shape', kfull.shape, kfullred.shape, Pi_extrap.shape, ' is Pi extrap shape', kpred.shape)
-            if withBisp:
-                #Building a bigger Pi to include bispectrum term
-                nparams = Pi_tot.shape[0]
-                nkpred = Pi_tot.shape[1]
-                nkbisp = sum(masktriangle)
-                #print(Pi_tot.shape, TermsBisp[3:].shape, TermsBisp.shape)
-                #Removing triangle contributions from the bispectrum expressions
-                TermsBisp = TermsBisp[3:]
-                #Applying mask and only getting b11 contribution
-                bisp = TermsBisp[4][masktriangle]
-                
-                newPi = np.zeros(shape=(nparams+1, nkpred+nkbisp))
-                newPi[:nparams, :nkpred] = Pi_tot
-                newPi[-1, nkpred:] = b1*bisp
-                #total Pi is now the correctly embedded one
-                Pi_tot = 1.*newPi 
+            modelX = np.concatenate([modelX, Bisp[masktriangle2]])
 
-            Covbi = get_Covbi_for_marg(Pi_tot,Cinvww,sigma=sigma_prior)
-            Cinvbi = np.linalg.inv(Covbi)
-            vectorbi = np.dot(modelX,np.dot(Cinvww,Pi_tot.T))-np.dot(Cinvwdata,Pi_tot.T)
-            chi2nomar = np.dot(modelX,np.dot(Cinvww,modelX))-2*np.dot(Cinvwdata,modelX)+chi2data
-            chi2mar = -np.dot(vectorbi,np.dot(Cinvbi,vectorbi))#+np.log(np.linalg.det(Covbi))
-            chi2 = chi2mar + chi2nomar
-        
-        else:
-             chi2 = np.dot(modelX,np.dot(Cinvww,modelX))-2*np.dot(Cinvwdata,modelX)+chi2data       
+        chi2 = np.dot(modelX,np.dot(Cinvww,modelX))-2*np.dot(Cinvwdata,modelX)+chi2data       
  
         if withPlanck:
             #print("Planck contrib is ", (rd-rs(Om,h,f_fid))**2/sigma_rd**2)
@@ -978,7 +684,7 @@ if __name__ ==  "__main__":
         withBisp = False
 
     kmin = 0.01
-    kminbisp = kmin
+    kminbisp = 0.04
     
     kmaxbisp = float(sys.argv[6])
     if kmaxbisp > 0:
@@ -994,6 +700,9 @@ if __name__ ==  "__main__":
     priorsup = float(sys.argv[9])
 
     simtype2 = simtype
+    if 'Hector' in simtype:
+        simtype2 += 'NGC'
+
     runtype = simtype+ZONE+'prior%s'%priorsup
     #workaround setting of marg_gauss, kmaxbisp = 0.07 is true and kmaxbisp = 0.08 is false
     if withMarg:
@@ -1042,7 +751,10 @@ if __name__ ==  "__main__":
         runtype += 'withBispkmax%s'%kmaxbisp
         Full_Cov = np.loadtxt(opa.join(INPATH,'Covariance/Cov%s%s_Bisp.dat'%(simtype,ZONE)))   
         Q1,Q2,Q3,Bispdata = np.loadtxt(opa.join(INPATH,'DataSims/Bispred_LightConeHector_%s_%s.dat'%(ZONE,boxnumber))).T
+        KMAXBISP = 0.15
+        R1,R2,R3 = Q1[(Q1<KMAXBISP)&(Q2<KMAXBISP)&(Q3<KMAXBISP)], Q2[(Q1<KMAXBISP)&(Q2<KMAXBISP)&(Q3<KMAXBISP)], Q3[(Q1<KMAXBISP)&(Q2<KMAXBISP)&(Q3<KMAXBISP)]
         masktriangle = (Q1>=kminbisp)&(Q1<=kmaxbisp)&(Q1<=Q2+Q3)&(Q1>=abs(Q2-Q3))&(Q2>=kminbisp)&(Q2<=kmaxbisp)&(Q3>=kminbisp)&(Q3<=kmaxbisp)
+        masktriangle2 = (R1>=kminbisp)&(R1<=kmaxbisp)&(R1<=R2+R3)&(R1>=abs(R2-R3))&(R2>=kminbisp)&(R2<=kmaxbisp)&(R3>=kminbisp)&(R3<=kmaxbisp)
     #print(masktriangle.shape)
 
                                                     
@@ -1051,9 +763,18 @@ if __name__ ==  "__main__":
     binning = False
     TableNkmu = None
     #marg_gaussian = True
+
+    nbinsAs = 100
+    nbinsOm = 48
+    nbinsh = 48
+
+    if 'Patchy' in gridname:
+        nbinsAs = 70
+        nbinsOm = 48
+        nbinsh = 72
     
 
-    lnAsmin,lnAsmax,Ommin,Ommax,hmin,hmax,interpolation_grid = get_grid(gridname,nbinsAs=100,withBisp=withBisp)    
+    lnAsmin,lnAsmax,Ommin,Ommax,hmin,hmax,interpolation_grid = get_grid(gridname,nbinsAs=nbinsAs,nbinsOm=nbinsOm,nbinsh=nbinsh,withBisp=withBisp)  
     print("got grid!")    
 ##############################
 ###  Priors ###################
@@ -1064,8 +785,8 @@ if __name__ ==  "__main__":
     bmax = priorsup
 
     # We require b_1>0 and b_4 is large due to the PCA that we do between b2 and b4
-    bmintab = [0, bmin, bmin, -100, bmin, bmin, bmin, -100, bmin, bmin, -100]
-    bmaxtab = [bmax, bmax, bmax, 100, bmax, bmax, bmax, 100, bmax, bmax, 100]
+    bmintab = [0, bmin, bmin,  -100, bmin, bmin, bmin, bmin, bmin, bmin, bmin]
+    bmaxtab = [bmax, bmax, bmax, 100, bmax, bmax, bmax, bmax, bmax, bmax, bmax]
     
 
     ##### The bounds for the minimizer ######
@@ -1144,17 +865,36 @@ if __name__ ==  "__main__":
     ##################################################################
     ## Setting up second fit ###########
     ##################################################################
-    
-    lnlike = np.load('/exports/pierre/EFTofBOSS/output/lnlikechain'+simtype2+'prior'+str(priorsup)+'gaussMargbox_'+str(boxnumber)+'kmax_'+str(kmax)+'run_0.npy')
-    chain = np.array(np.load('/exports/pierre/EFTofBOSS/output/samplerchain'+simtype2+'prior'+str(priorsup)+'gaussMargbox_'+str(boxnumber)+'kmax_'+str(kmax)+'run_0.npy'))
+    all_true  =  np.concatenate(([lnAs_fid, Om_fid, h_fid],[1.9]+10*[0]))
+    all_name  =  np.concatenate(([r'$A_s$',r'$\Omega_m$',r'$h$'],[r'$b_%s$'%(i+1) for i in range(len(inipos))]))
+    fix_para  =  all_true
+
+
+    withBispkmax = ''
+    if withBisp:
+        withBispkmax = 'withBispkmax%s'%kmaxbisp
+
+    lnlike = np.load('/exports/pierre/EFTofBOSS/output/lnlikechain'+simtype2+'prior'+str(priorsup)+withBispkmax+'gaussMargbox_'+str(boxnumber)+'kmax_'+str(kmax)+'run_0.npy')
+    chain = np.array(np.load('/exports/pierre/EFTofBOSS/output/samplerchain'+simtype2+'prior'+str(priorsup)+withBispkmax+'gaussMargbox_'+str(boxnumber)+'kmax_'+str(kmax)+'run_0.npy'))
+    #lnlike = np.load('/exports/pierre/EFTofBOSS/output/lnlikechain'+simtype2+'prior'+str(priorsup)+'gaussMargbox_'+str(boxnumber)+'kmax_'+str(kmax)+'run_0.npy')
+    #chain = np.array(np.load('/exports/pierre/EFTofBOSS/output/samplerchain'+simtype2+'prior'+str(priorsup)+'gaussMargbox_'+str(boxnumber)+'kmax_'+str(kmax)+'run_0.npy'))
     id1,idx=unravel_index(lnlike.argmax(), lnlike.shape)
-    lnAs,Om,h,b1,b2,b4 = chain[id1,idx*5,:]
+    
+    if withBisp:
+        lnAs,Om,h,b1,b2,b4,b8 = chain[id1,idx*5,:]
+        print (chain[id1,idx*5,:])
+    else:
+        lnAs,Om,h,b1,b2,b4 = chain[id1,idx*5,:]
     b9 = 0
     b10 = 0
 
-    free_ml = np.array([lnAs,Om,h,b1,b2,b4,0,0])
-
-    free_para2 =  [False,False,False,False,False,True,False,True,True,True,True,False,False,False]
+    if withBisp:
+        print ('b8 is %s'%b8)
+        free_para2 =  [False,False,False,False,False,True,False,True,True,True,False,False,False,True]
+        fix_para2 = np.array([lnAs,Om,h,b1,b2,b4,0,b9,b10])
+    else:
+        free_para2 =  [False,False,False,False,False,True,False,True,True,True,True,False,False,False]
+        fix_para2 = np.array([lnAs,Om,h,b1,b2,b4,b9,b10])
     
     # b8 = 0
     #free_para2 =  [False,False,False,False,False,True,False,True,True,True,False,True,True,False]
@@ -1163,8 +903,7 @@ if __name__ ==  "__main__":
     #free_para2 = [True,True,True,True,True,True,True,True,True,True,False,True,True,False]
     nparam2 = len(free_para2)
     
-
-    all_true2  =  np.concatenate(([lnAs,Om,h,b1,b2,1, b4], 7*[0] ))
+    all_true2  =  np.concatenate(([lnAs,Om,h,b1,b2,0, b4], 7*[0] ))
     #all_name2  =  np.concatenate(([r'$A_s$',r'$\Omega_m$',r'$h$'],[r'$b_%s$'%(i+1) for i in range(len(inipos))]))
     
     ndim2  =  sum(free_para2)
@@ -1172,11 +911,13 @@ if __name__ ==  "__main__":
     #print(free_para2)
     #print(fix_para2)
     #free_true2 = all_true2[free_para2]
-                #################################
+    
+
+    #################################
     ## Find maximum likelihood ######
     #################################
 
-    chi2bis  =  lambda theta2: -2 * lnlike2(theta2, kpred,chi2data,Cinvwdata,Cinvww, free_para2, free_ml, bounds, Om_fid, sigma_prior = priorsup, binning=binning,marg_gaussian=False,TableNkmu=TableNkmu)
+    chi2bis  =  lambda theta2: -2 * lnlike2(theta2, kpred,chi2data,Cinvwdata,Cinvww, free_para2, fix_para2, bounds, Om_fid, sigma_prior = priorsup, binning=binning,marg_gaussian=False,TableNkmu=TableNkmu)
 
     result2  =  op.minimize(chi2bis, np.array(all_true2)[free_para2], method = 'SLSQP',bounds = np.array(bounds)[free_para2],options = {'maxiter':100})
     
@@ -1193,73 +934,17 @@ if __name__ ==  "__main__":
     else:
         dof2 = len(xdata) + sum(masktriangle) - ndim2
     print('minchi2 = ' + str(minchi22), dof2)
-    #np.savetxt(opa.join(OUTPATH,"minchi2%sbox_%skmax_%s.txt")%(runtype,boxnumber,kmax),np.concatenate([free_ml,[minchi2,dof]]))
-
+    
     #################################
     ## Produce spectra ######
     #################################
-
-    b3,b5,b6,b7,b8 = free_ml2
-    #b3,b5,b6,b7, b8, b9,b10 = free_ml2
-    #b8 = 0
-
-    #lnAs,Om,h,b1,b2,b3,b4,b5,b6,b7,b9,b10 = free_ml2
-
-
-    Plininterp,Ploopinterp = interpolation_grid 
-        
-    kfull = Ploopinterp((lnAs,Om,h))[:,0]
+    if withBisp:
+        b3,b5,b6,b7,b11 = free_ml2
+    else:    
+        b3,b5,b6,b7,b8 = free_ml2
     
-    if check_if_multipoles_k_array(kfull):
-        kfull = kfull[:len(kfull)/3] 
-    kfullred = kfull[kfull<kpred.max()+0.1]
-    Ploop = np.swapaxes(Ploopinterp((lnAs,Om,h)).reshape(3,len(kfull),22),axis1 = 1,axis2 = 2)[:,1:,:]
-    Plin = np.swapaxes(Plininterp((lnAs,Om,h)).reshape(3,len(kfull),4),axis1 = 1,axis2 = 2)[:,1:,:]
-        
-    valueb = np.array([b1,b2,b3,b4,b5,b6,b7,b8,b9,b10])        
-    Pmodel = computePS(valueb,Plin,Ploop,kfull,kfull)
-
-    qperp,qpar = get_AP_param(Om,Om_fid)
-    #qperp = 1
-    #qpar =1
-    PmodelAP = APpowerspectraNkmu.changetoAPnobinning(Pmodel,kfull,kfullred,qperp,qpar,nbinsmu=100)
-    Pmodel_extrap = scipy.interpolate.interp1d(kfullred,PmodelAP,axis=-1,bounds_error=False,fill_value='extrapolate')(xdata[:len(xdata)/3])
-    modelX = Pmodel_extrap.reshape(-1)
-
-    ####
-
-    P0 = np.zeros((np.shape(Plin)))
-    P0loop = np.zeros((np.shape(Ploop)))
-
-    PloopX = computePS(valueb,P0,Ploop,kfull,kfull)
-    PloopXAP = APpowerspectraNkmu.changetoAPnobinning(PloopX,kfull,kfullred,qperp,qpar,nbinsmu=100)
-    PloopX_extrap = scipy.interpolate.interp1d(kfullred,PloopXAP,axis=-1,bounds_error=False,fill_value='extrapolate')(xdata[:len(xdata)/3])
-    loopX = PloopX_extrap.reshape(-1)
-
-    valueb1 = np.array([b1,0,0,0,0,0,0,0,0,0])  
-    PloopX1 = computeLoop2(valueb1,P0,Ploop,kfull,kfull)
-    PloopXAP1 = APpowerspectraNkmu.changetoAPnobinning(PloopX1,kfull,kfullred,qperp,qpar,nbinsmu=100)
-    PloopX1_extrap = scipy.interpolate.interp1d(kfullred,PloopXAP1,axis=-1,bounds_error=False,fill_value='extrapolate')(xdata[:len(xdata)/3])
-    loopX1 = PloopX1_extrap.reshape(-1)
-
-    valueb2 = np.array([0,b2,0,0,0,0,0,0,0,0])  
-    PloopX2 = computeLoop2(valueb2,P0,Ploop,kfull,kfull)
-    PloopXAP2 = APpowerspectraNkmu.changetoAPnobinning(PloopX2,kfull,kfullred,qperp,qpar,nbinsmu=100)
-    PloopX2_extrap = scipy.interpolate.interp1d(kfullred,PloopXAP2,axis=-1,bounds_error=False,fill_value='extrapolate')(xdata[:len(xdata)/3])
-    loopX2 = PloopX2_extrap.reshape(-1)
-
-    PlinX = computeLin(valueb,Plin,P0loop,kfull,kfull)
-    PlinXAP = APpowerspectraNkmu.changetoAPnobinning(PlinX,kfull,kfullred,qperp,qpar,nbinsmu=100)
-    PlinX_extrap = scipy.interpolate.interp1d(kfullred,PlinXAP,axis=-1,bounds_error=False,fill_value='extrapolate')(xdata[:len(xdata)/3])
-    linX = PlinX_extrap.reshape(-1)
-
-    valueb9 = np.array([0,0,0,0,0,0,0,0,b9,b10])     
-
-    PstochX = computeLoop2(valueb9,P0,Ploop,kfull,kfull)
-    PstochXAP = APpowerspectraNkmu.changetoAPnobinning(PstochX,kfull,kfullred,qperp,qpar,nbinsmu=100)
-    PstochX_extrap = scipy.interpolate.interp1d(kfullred,PstochXAP,axis=-1,bounds_error=False,fill_value='extrapolate')(xdata[:len(xdata)/3])
-    stochX = PstochX_extrap.reshape(-1)
-
-    np.savetxt(opa.join(OUTPATH,"fit%sbox_%skmax_%s.txt")%(runtype,boxnumber,kmax), zip(xdata, ydata, modelX, np.diag(Covred), loopX, linX, stochX, loopX1, loopX2))
-    np.savetxt(opa.join(OUTPATH,"bestfit%sbox_%skmax_%s.txt")%(runtype,boxnumber,kmax), [lnAs,Om,h,b1,b2,b3,b4,b5,b6,b7,b8,b9,b10])
+    if withBisp:
+        np.savetxt(opa.join(OUTPATH,"bestfit%sbox_%skmax_%s.txt")%(runtype,boxnumber,kmax), [lnAs,Om,h,b1,b2,b3,b4,b5,b6,b7,b8,b9,b10,b11])
+    else:
+        np.savetxt(opa.join(OUTPATH,"bestfit%sbox_%skmax_%s.txt")%(runtype,boxnumber,kmax), [lnAs,Om,h,b1,b2,b3,b4,b5,b6,b7,b8,b9,b10])
     np.savetxt(opa.join(OUTPATH,"minchi2%sbox_%skmax_%s.txt")%(runtype,boxnumber,kmax),[minchi22,dof2])

@@ -215,7 +215,6 @@ def make_configfiles(configs, filekeys=['CLASS_configf','zbEFT_configf','zbEFTw_
 def get_config(bigconfig_file=None, bigconfig=None, cat=False):
     """ Splits the configuration into 3: one for CLASS, one for the EFT code, 
         one for the wrapper. Whatever is unset should be set to the default value.
-
         Inputs
         ------
         EITHER

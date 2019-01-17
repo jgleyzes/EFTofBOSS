@@ -39,7 +39,7 @@ import WindowFunctionFourier
 # Data paths
 INPATH = opa.abspath(opa.join(THIS_PATH,'input'))
 #INPATH2 = opa.abspath('/scratch/users/kokron/')
-OUTPATH = opa.abspath(opa.join(THIS_PATH,'output_fast')) 
+OUTPATH = opa.abspath(opa.join(THIS_PATH,'output_patchy')) 
 #print(OUTPATH)
 if not opa.isdir(OUTPATH): raise Exception(OUTPATH + ' not there!')
 
@@ -80,8 +80,7 @@ SIGMA_RD = 0.26
 #ZD = 1059.62
 #SIGMA_ZD = 0.31 # rd(zd+sigma)-dr(zd-sigma) < 0.2 sigma_rd: we take zd to be a delta function
 # Sound horizon at decoupling [Mpc] (PLANCK 2015 TT,TE,EE+lowP+lensing (Table 4)):
-#RD = 147.41
-#SIGMA_RD = 0.30
+#RD = 147.41#SIGMA_RD = 0.30
 
 def rs(Om,h,f_fid):
     om = Om*h**2
@@ -449,10 +448,10 @@ def lnlike(theta,  kpred,chi2data,Cinvwdata,Cinvww, free_para, fix_para,bounds,O
             if type(TableNkmu) == type(None):
                 raise Exception('You want to account for binning but forgot to provide a TableNkmu (array of shape (3,n)) obtained from the sims/ Can be found in input/TableNkmu')
             else : 
-                PmodelAP = APpowerspectraNkmu.changetoAPbinning(Pmodel,kfull,kfull,qperp,qpar,TableNkmu)
+                PmodelAP = APpowerspectraNkmu.changetoAPbinning(Pmodel,kfull,kfullred,qperp,qpar,TableNkmu)
                 if marg_gaussian:
-                    Pi_AP = APpowerspectraNkmu.changetoAPbinningPi(Pi_or,kfull,kfull,qperp,qpar,TableNkmu)
-        
+                    Pi_AP = APpowerspectraNkmu.changetoAPbinningPi(Pi_or,kfull,kfullred,qperp,qpar,TableNkmu)
+
         #print(kfullred.shape, kfull.shape, PmodelAP.shape)
         Pmodel_extrap = scipy.interpolate.interp1d(kfullred,PmodelAP,axis=-1,bounds_error=False,fill_value='extrapolate')(kpred)
         modelX = Pmodel_extrap.reshape(-1)
@@ -587,6 +586,8 @@ if __name__ ==  "__main__":
     #For lightcone simulations, need to specify north or south for now (later, merge the two but I'm missing the covariance for SGC
     #Change this back when not doing Challenge boxes
     ZONE = 'NGC'
+    #ZONE = 'SGC'
+
     if "Challenge" in simtype:
         ZONE = ''
     if "Hector" not in simtype:
@@ -623,14 +624,13 @@ if __name__ ==  "__main__":
         free_para =  [True,True,True,True,True,True,True,True,True,True,False,True,False,withBisp]
         a = 1.15
         print("withMarg is", withMarg, " setting marg_gaussian to ", marg_gaussian)
-    if ZONE != '':    
-        dataQ = np.loadtxt(opa.join(INPATH,'Window_functions/dataQ_%s.txt'%ZONE)).T 
-    elif 'ChallengeQuarter' in simtype:
-        dataQ = np.loadtxt(opa.join(INPATH,'Window_functions/dataQ_ChallengeQuarter.dat')).T
+    #if ZONE != '':    
+    #    dataQ = np.loadtxt(opa.join(INPATH,'Window_functions/dataQ_%s.txt'%ZONE)).T 
+    #elif 'ChallengeQuarter' in simtype:
+    #    dataQ = np.loadtxt(opa.join(INPATH,'Window_functions/dataQ_ChallengeQuarter.dat')).T
     if 'Challenge' in simtype:
         #CHANGE THIS BACK, SETTING FULL COV TO QUARTER
         #change RD to match the CHallenge Box cosmology
-
         RD = 147.68188
         if 'Quarter' and 'Japan' not in simtype:
             window = False
@@ -674,6 +674,11 @@ if __name__ ==  "__main__":
     nbinsAs = 100
     nbinsOm = 48
     nbinsh = 48
+
+    if 'ChallengeFull' in gridname:
+        nbinsAs = 150
+        nbinsOm = 48
+        nbinsh = 72 
 
     if 'Patchy' in gridname or 'Dida' in gridname:
         nbinsAs = 70
@@ -732,7 +737,6 @@ if __name__ ==  "__main__":
             if 'Japan' not in simtype:
                 simtype = simtype[:-1]
         kPS,PSdata,_ = np.loadtxt(opa.join(INPATH,'DataSims/ps1D_%s%s_%s.dat'%(simtype,ZONE,boxnumber))).T
-        klog = np.loadtxt(opa.join(INPATH,'Window_functions/k.dat'))
         for indexk,kmax in enumerate(kmaxtab):    
 
             xdata = kPS[(kPS<kmax)&(kPS>kmin)]
@@ -762,7 +766,7 @@ if __name__ ==  "__main__":
                 raise(Exception("Quarter window function not yet implemented! Look at hard-coded path in WindowFunctionFourier.py for more information"))
             else:
                 #print("I'm applying the window function!!")
-                kpred,Cinvw,Cinvww = WindowFunctionFourier.apply_window_covariance(Cinv,xdata,thin=2, bisp = withBisp, indexkred = kmask, masktriangle = masktriangle)
+                kpred,Cinvw,Cinvww = WindowFunctionFourier.apply_window_covariance(ZONE,Cinv,xdata,thin=2, bisp = withBisp, indexkred = kmask, masktriangle = masktriangle)
             '''
             ####################################################################################################
             print("No window function applied")
@@ -774,7 +778,19 @@ if __name__ ==  "__main__":
             '''
             chi2data = np.dot(ydata,np.dot(Cinv,ydata))
             Cinvwdata = np.dot(ydata, Cinvw)     
-    
+
+#############################################
+
+        if withPlanck:
+            runtype+= 'withPlanck'
+        print('withPlanck is ', withPlanck)
+
+
+        if marg_gaussian:
+            runtype += 'gaussMarg'
+
+#############################################
+
     #################################
     ## Setting up the fit ###########
     #################################    
@@ -797,15 +813,7 @@ if __name__ ==  "__main__":
     ## Find maximum likelihood ######
     #################################
          
-        #epsilon  =  0.02
-        if withPlanck:
-            runtype+= 'withPlanck'
-        print('withPlanck is ', withPlanck)
-        #epsilon = 0.01
-        epsilon = 0.5
-
-        if marg_gaussian:
-            runtype += 'gaussMarg'
+        
         t0 = time.time()
         print(free_para)    
         chi2  =  lambda theta: -2 * lnlike(theta, kpred,chi2data,Cinvwdata,Cinvww, free_para, fix_para,bounds,Om_fid, sigma_prior = priorsup, binning=binning,marg_gaussian=marg_gaussian,TableNkmu=TableNkmu)
@@ -836,7 +844,8 @@ if __name__ ==  "__main__":
     ###################################
 
        # Set up the sampler.
- 
+    epsilon = 0.01
+    #epsilon = 0.1
     
     Nchains  =  4
     nwalkers  =  4*nparam
@@ -846,8 +855,8 @@ if __name__ ==  "__main__":
     # Start MCMC
     t0 = time.time()
     temperature  =  1.
-    #minlength  =  6000
-    minlength = 2000
+    minlength  =  6000
+    #minlength = 2000
     ichaincheck  =  50
     ithin  =  1
         

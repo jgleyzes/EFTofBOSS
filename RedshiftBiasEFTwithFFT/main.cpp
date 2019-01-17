@@ -52,8 +52,8 @@ int main(int argc, char *argv[]) {
 			ComputePowerSpectraLinearNoResum  (paramsP11, &PsLinear) ;
 			ComputePowerSpectra1LoopNoResum (paramsP11, nbar, km, knl, &Ps1Loop) ;
 
-			//ExportPowerSpectraNoResum (PathToFolder, 0, &PsLinear) ;
-			//ExportPowerSpectraNoResum (PathToFolder, 1, &Ps1Loop) ;
+			ExportPowerSpectraNoResum (PathToFolder, 0, &PsLinear) ;
+			ExportPowerSpectraNoResum (PathToFolder, 1, &Ps1Loop) ;
 
 			ResumPowerSpectra (PathToFolder, paramsP11, &PsLinear, &Ps1Loop, ImportM, ExportM, &TableM) ;
 

@@ -34,7 +34,7 @@ def check_if_multipoles_k_array(setk):
     return setk[len(setk)/3] == setk[0]  
     
     
-def apply_window_PS(setPS,PS,setkout,withmask=True,windowk=0.1):
+def apply_window_PS(zone,setPS,PS,setkout,withmask=True,windowk=0.1):
     
     """
     Apply the window function to the power spectrum by doing a convolution directly in fourier space, encoded in Qll.
@@ -63,9 +63,9 @@ def apply_window_PS(setPS,PS,setkout,withmask=True,windowk=0.1):
 
 
     # Load window matrices
-    Qll = np.load(opa.join(INPATH,'Window_functions/Qll_LightConeHectorNGC.npy'))  
-    setk_or = np.loadtxt(opa.join(INPATH,'Window_functions/kp_LightConeHectorNGC.txt'))  
-    setkp_or = np.loadtxt(opa.join(INPATH,'Window_functions/k.dat'))
+    Qll = np.load(opa.join(INPATH,'Window_functions/Qll_LightConeHector'+zone+'.npy'))  
+    setk_or = np.loadtxt(opa.join(INPATH,'Window_functions/kp_LightConeHector'+zone+'.txt'))  
+    setkp_or = np.loadtxt(opa.join(INPATH,'Window_functions/k_LightConeHector'+zone+'.dat'))
 
     
 
@@ -99,7 +99,7 @@ def apply_window_PS(setPS,PS,setkout,withmask=True,windowk=0.1):
     return PStransformed
 
 
-def apply_window_covariance(Cinv,setk,thin=1,withmask=True,windowkplus=0.2,kpmin=3.e-4, bisp=False, indexkred=None, masktriangle=None):
+def apply_window_covariance(zone,Cinv,setk,thin=1,withmask=True,windowkplus=0.2,kpmin=3.e-4, bisp=False, indexkred=None, masktriangle=None):
     """
     Apply the window function to the inverse covariance by doing a 2 convolutions directly in fourier space, encoded in Qll.
     
@@ -132,15 +132,16 @@ def apply_window_covariance(Cinv,setk,thin=1,withmask=True,windowkplus=0.2,kpmin
         
         
         if Cinv.shape[0]/3 != nkin:
+            print (Cinv.shape[0]/3, nkin)
             raise Exception('The setk needs to match the array of k for Cinv')
         
         #Put the inverse covariance in shape (l,k,l',k')    
         Cinvllp = np.swapaxes(Cinv.reshape((3,nkin,3,nkin)),axis1=1,axis2=2)
         
         # Load window matrices
-        Qll = np.load(opa.join(INPATH,'Window_functions/Qll_LightConeHectorNGC.npy'))  
-        setk_or = np.loadtxt(opa.join(INPATH,'Window_functions/kp_LightConeHectorNGC.txt'))  
-        setkp_or = np.loadtxt(opa.join(INPATH,'Window_functions/k.dat'))
+        Qll = np.load(opa.join(INPATH,'Window_functions/Qll_LightConeHector'+zone+'.npy'))  
+        setk_or = np.loadtxt(opa.join(INPATH,'Window_functions/kp_LightConeHector'+zone+'.txt'))  
+        setkp_or = np.loadtxt(opa.join(INPATH,'Window_functions/k_LightConeHector'+zone+'.dat'))
 
         Qll = Qll[:,:,::thin,:]
         Qll_old = 1.*Qll
@@ -191,7 +192,7 @@ def apply_window_covariance(Cinv,setk,thin=1,withmask=True,windowkplus=0.2,kpmin
     if bisp:
         
         
-        setk_or = np.loadtxt(opa.join(INPATH,'Window_functions/kp_LightConeHectorNGC.txt'))  
+        setk_or = np.loadtxt(opa.join(INPATH,'Window_functions/kp_LightConeHector'+zone+'.txt'))  
         setkp_or = np.loadtxt(opa.join(INPATH,'Window_functions/k.dat'))
         setkp_or = setkp_or[::thin]
         nkbisp = len(masktriangle) 
@@ -214,7 +215,7 @@ def apply_window_covariance(Cinv,setk,thin=1,withmask=True,windowkplus=0.2,kpmin
 
         
         # Importing the big window function without 4 indices and thinning it appropriately 
-        bigW = np.load(opa.join(INPATH,'Window_functions/bigW_new.npy'))
+        bigW = np.load(opa.join(INPATH,'Window_functions/bigW_LightConeHector'+zone+'.npy'))
         bigW_diet = np.zeros(shape=(bigW.shape[0], (bigW.shape[1]-nkbisp)/thin + nkbisp))
         for i in range(bigW_diet.shape[0]):
             bigWcol = bigW[i,:-nkbisp]

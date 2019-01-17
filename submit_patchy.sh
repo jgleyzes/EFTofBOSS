@@ -15,7 +15,7 @@ for kmax in 0.2 0.25 0.3
 do
 for kmaxbisp in 0
 do
-for number in 1 2
+for number in 21 22
 do
 qsub -l nodes=node01:ppn=4 -N b$number.$kmax.$simname.$theoryCovness.$marg.$planck.$prior -o log/output_b$number.$kmax.$kmaxbisp.$simname.Planck$planck.Prior$prior.log -e log/error_b$number.$kmax.$kmaxbisp.$simname.Planck$planck.Prior$prior.log -v aa=$number,b=$kmax,c=$simname,d=$planck,e=$grid,f=$kmaxbisp,g=$marg,h=$theoryCovness,ii=$prior cluster_MCMC_Mercury.sh 
 done
@@ -37,7 +37,7 @@ for kmax in 0.2 0.25 0.3
 do
 for kmaxbisp in 0
 do
-for number in 3 4
+for number in 23 24
 do
 qsub -l nodes=node02:ppn=4 -N b$number.$kmax.$simname.$theoryCovness.$marg.$planck.$prior -o log/output_b$number.$kmax.$kmaxbisp.$simname.Planck$planck.$prior.log -e log/error_b$number.$kmax.$kmaxbisp.$simname.Planck$planck.$prior.log -v aa=$number,b=$kmax,c=$simname,d=$planck,e=$grid,f=$kmaxbisp,g=$marg,h=$theoryCovness,ii=$prior cluster_MCMC_Mercury.sh 
 done
@@ -61,7 +61,7 @@ for kmax in 0.2 0.25 0.3
 do
 for kmaxbisp in 0
 do
-for number in 5 6
+for number in 25 26
 do
 qsub -l nodes=node03:ppn=4 -N b$number.$kmax.$simname.$theoryCovness.$marg.$planck.$prior -o log/output_b$number.$kmax.$kmaxbisp.$simname.Planck$planck.$prior.log -e log/error_b$number.$kmax.$kmaxbisp.$simname.Planck$planck.$prior.log -v aa=$number,b=$kmax,c=$simname,d=$planck,e=$grid,f=$kmaxbisp,g=$marg,h=$theoryCovness,ii=$prior cluster_MCMC_Mercury.sh 
 
@@ -87,7 +87,7 @@ for kmax in 0.2 0.25 0.3
 do
 for kmaxbisp in 0
 do
-for number in 7 8
+for number in 27 28
 do
 qsub -l nodes=node04:ppn=4 -N b$number.$kmax.$simname.$theoryCovness.$marg.$planck.$prior -o log/output_b$number.$kmax.$kmaxbisp.$simname.Planck$planck.$prior.log -e log/error_b$number.$kmax.$kmaxbisp.$simname.Planck$planck.$prior.log -v aa=$number,b=$kmax,c=$simname,d=$planck,e=$grid,f=$kmaxbisp,g=$marg,h=$theoryCovness,ii=$prior cluster_MCMC_Mercury.sh 
 
@@ -114,7 +114,7 @@ for kmax in 0.2 0.25 0.3
 do
 for kmaxbisp in 0
 do
-for number in 9 10
+for number in 29 30
 do
 qsub -l nodes=node05:ppn=4 -N b$number.$kmax.$simname.$theoryCovness.$marg.$planck.$prior -o log/output_b$number.$kmax.$kmaxbisp.$simname.Planck$planck.$prior.log -e log/error_b$number.$kmax.$kmaxbisp.$simname.Planck$planck.$prior.log -v aa=$number,b=$kmax,c=$simname,d=$planck,e=$grid,f=$kmaxbisp,g=$marg,h=$theoryCovness,ii=$prior cluster_MCMC_Mercury.sh 
 
@@ -139,7 +139,7 @@ for kmax in 0.2 0.25 0.3
 do
 for kmaxbisp in 0
 do
-for number in 1 2
+for number in 21 22
 do
 qsub -l nodes=node06:ppn=4 -N b$number.$kmax.$simname.$theoryCovness.$marg.$planck.$prior -o log/output_b$number.$kmax.$kmaxbisp.$simname.Planck$planck.$prior.log -e log/error_b$number.$kmax.$kmaxbisp.$simname.Planck$planck.$prior.log -v aa=$number,b=$kmax,c=$simname,d=$planck,e=$grid,f=$kmaxbisp,g=$marg,h=$theoryCovness,ii=$prior cluster_MCMC_Mercury.sh 
 
@@ -164,7 +164,7 @@ for kmax in 0.2 0.25 0.3
 do
 for kmaxbisp in 0
 do
-for number in 3 4
+for number in 23 24
 do
 qsub -l nodes=node07:ppn=4 -N b$number.$kmax.$simname.$theoryCovness.$marg.$planck.$prior -o log/output_b$number.$kmax.$kmaxbisp.$simname.Planck$planck.$prior.log -e log/error_b$number.$kmax.$kmaxbisp.$simname.Planck$planck.$prior.log -v aa=$number,b=$kmax,c=$simname,d=$planck,e=$grid,f=$kmaxbisp,g=$marg,h=$theoryCovness,ii=$prior cluster_MCMC_Mercury.sh 
 
@@ -189,7 +189,7 @@ for kmax in 0.2 0.25 0.3
 do
 for kmaxbisp in 0
 do
-for number in 5 6
+for number in 25 26
 do
 qsub -l nodes=node08:ppn=4 -N b$number.$kmax.$simname.$theoryCovness.$marg.$planck.$prior -o log/output_b$number.$kmax.$kmaxbisp.$simname.Planck$planck.$prior.log -e log/error_b$number.$kmax.$kmaxbisp.$simname.Planck$planck.$prior.log -v aa=$number,b=$kmax,c=$simname,d=$planck,e=$grid,f=$kmaxbisp,g=$marg,h=$theoryCovness,ii=$prior cluster_MCMC_Mercury.sh 
 
@@ -214,7 +214,7 @@ for kmax in 0.2 0.25 0.3
 do
 for kmaxbisp in 0
 do
-for number in 7 8
+for number in 27 28
 do
 qsub -l nodes=node09:ppn=4 -N b$number.$kmax.$simname.$theoryCovness.$marg.$planck.$prior -o log/output_b$number.$kmax.$kmaxbisp.$simname.Planck$planck.$prior.log -e log/error_b$number.$kmax.$kmaxbisp.$simname.Planck$planck.$prior.log -v aa=$number,b=$kmax,c=$simname,d=$planck,e=$grid,f=$kmaxbisp,g=$marg,h=$theoryCovness,ii=$prior cluster_MCMC_Mercury.sh 
 
@@ -239,7 +239,7 @@ for kmax in 0.2 0.25 0.3
 do
 for kmaxbisp in 0
 do
-for number in 9 10
+for number in 29 30
 do
 qsub -l nodes=node10:ppn=4 -N b$number.$kmax.$simname.$theoryCovness.$marg.$planck.$prior -o log/output_b$number.$kmax.$kmaxbisp.$simname.Planck$planck.$prior.log -e log/error_b$number.$kmax.$kmaxbisp.$simname.Planck$planck.$prior.log -v aa=$number,b=$kmax,c=$simname,d=$planck,e=$grid,f=$kmaxbisp,g=$marg,h=$theoryCovness,ii=$prior cluster_MCMC_Mercury.sh 
 
