@@ -39,7 +39,7 @@ import WindowFunctionFourier
 # Data paths
 INPATH = opa.abspath(opa.join(THIS_PATH,'input'))
 #INPATH2 = opa.abspath('/scratch/users/kokron/')
-OUTPATH = opa.abspath(opa.join(THIS_PATH,'output_patchy')) 
+OUTPATH = opa.abspath(opa.join(THIS_PATH,'output_newpatchy')) 
 #print(OUTPATH)
 if not opa.isdir(OUTPATH): raise Exception(OUTPATH + ' not there!')
 
@@ -51,7 +51,7 @@ if not opa.isdir(OUTPATH): raise Exception(OUTPATH + ' not there!')
 ### rescale number density
 nd = 3e-4 * 0.1 # we multiply by 0.1 because of shot-noise subtraction
 km = 0.7
-knl = 0.6
+knl = 0.7
 #nd = 0.01
 #####################################################################################################################################################
 ################## Sound horizon at decoupling #######################
@@ -559,25 +559,23 @@ if __name__ ==  "__main__":
     print(gridname)
     # Load the row that we are interested in
     
-    
     # gridname = series_cosmo.loc['gridname']#
-    
-    # Sound horizon at decoupling for patchy mocks fiducial cosmology
-    if "data" not in boxnumber:
-        RD = 148.012
 
     # COSMOLOGICAL GLOBALS: fiducial model (should match input sim data!)
     Om_fid  =  series_cosmo.loc['Omega_m']
     lnAs_fid = series_cosmo.loc['lnAs']
     h_fid  =  series_cosmo.loc['h']
-    #z_pk = 0.57
     z_pk = series_cosmo.loc['z_pk']
-
-    
-
     ob_fid = series_cosmo.loc['omega_b']
     # ratio omega_b/omega_c
     f_fid = ob_fid / (Om_fid*h_fid**2 - ob_fid)
+
+
+    # Sound horizon at decoupling for patchy mocks fiducial cosmology
+    if "data" not in boxnumber:
+        RD = 147.652 # PATCHY TRUE SIMULATION COSMOLOGY
+        z_pk = 0.55
+    
 
     withBisp = False 
     

@@ -17,8 +17,10 @@ run=0
 
 #gridname = 'ChallengeJapanHDvFFT_IR06'
 
-gridname = 'ChallengeFullHDvFFT_IR06'
+#gridname = 'ChallengeFullHDvFFT_IR06'
 
+
+gridname = 'LightConeHectorPatchyz55HDvFFT_IR06'
 
 #tablepkstest=np.load('/scratch/users/kokron/textfiles/Tablepks0.npy')
 tablePlintest=np.load('/exports/pierre/EFTofBOSS/output/textfiles/TablePlinSC%shalf%srun%sstep0.npy'%(gridname,halfnum,250*run))
@@ -27,9 +29,9 @@ tablePlooptest=np.load('/exports/pierre/EFTofBOSS/output/textfiles/TablePloopSC%
 #tableftest=np.load('/scratch/users/kokron/textfiles/TablefSCPatchyhalf%srun%sstep0.npy'%(gridname,halfnum,250*run))
 #tablePktest=np.load('/scratch/users/kokron/textfiles/TablepkSPBwidelassChalf%srun%sstep0.npy'%(gridname,halfnum,250*run+missing[0]))
 
-Ntot = 150*48*72
+#Ntot = 150*48*72
 
-#Ntot=70*48*72
+Ntot=70*48*72
 
 #tablef=np.zeros(Ntot)
 #tables8=np.zeros(Ntot)

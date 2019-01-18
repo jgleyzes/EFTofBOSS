@@ -60,16 +60,20 @@ else:
 # COSMOLOGICAL GLOBALS: fiducial model (should match input sim data!)
 dfcosmo = pd.read_csv(opa.join(SCRATCH_PATH,'input/DataFrameCosmosims.csv'),index_col=0)
 
+simtype = 'LightConeHectorPatchyTrue'
+
 #simtype = 'LightConeDida'
-simtype = 'ChallengeA'
+#simtype = 'ChallengeA'
 #simtype = 'ChallengeJapanCMASS2'
 series_cosmo = dfcosmo.loc[simtype] 
 
-gridname = 'ChallengeFullHDvFFT_IR06'
+gridname = 'LightConeHectorPatchyz55HDvFFT_IR06'
+#gridname = 'ChallengeFullHDvFFT_IR06'
 #gridname = 'ChallengeJapanHDvFFT_IR06'
 #gridname = series_cosmo.loc['gridname']
 #gridname = 'LightConeDidaHDvFFT_IR06'
 #gridname = 'ChallengeHDvFFT_IR06'
+
 ocfid =  series_cosmo.loc['Omega_m']*series_cosmo.loc['h']**2-series_cosmo.loc['omega_b']
 obfid = series_cosmo.loc['omega_b']
 
@@ -83,12 +87,14 @@ Omega_mfid = dfcosmo.loc[simtype,'Omega_m']
 z_pk = dfcosmo.loc[simtype,'z_pk']
 nsfid = dfcosmo.loc[simtype,'ns']
 
+#print (z_pk)
 
 
 ###########################################
 ###  Grid ##############################
 ###########################################
 
+'''
 ### GRID FOR FULL CHALLENGE
 lnAsmin=2.8
 lnAsmax=3.5
@@ -96,6 +102,7 @@ Ommin=0.27
 Ommax=0.37
 hmin=0.58
 hmax=0.78
+'''
 
 '''
 ### GRID FOR CHALLENGE
@@ -117,15 +124,15 @@ hmin=0.6
 hmax=0.9
 '''
 
-'''
+
 ### GRID FOR PATCHY
-lnAsmin=2.5
+lnAsmin=2.0
 lnAsmax=3.8
 Ommin=0.2
 Ommax=0.4
 hmin=0.5
 hmax=0.9
-'''
+
 
 '''
 ### GRID FOR Dida
@@ -148,7 +155,7 @@ hmax=0.8
 '''
 
 thetatab=[]
-nbinsAs=150
+nbinsAs=70
 nbinsOm=48 
 nbinsh=72 
 for i in range(0,nbinsAs): #creates a list of couple (alphaT,alphaB) to use the parallelisation
